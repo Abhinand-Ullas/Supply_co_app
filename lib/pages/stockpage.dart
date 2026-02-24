@@ -134,21 +134,13 @@ class _StockPageState extends State<StockPage>
       appBar: AppBar(
         backgroundColor: Color(0xFF1B5E20), // Dark green color
         elevation: 0,
-        title: Row(
-          children: [
-            Icon(Icons.arrow_back),
-            SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                widget.supplyCOName,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          widget.supplyCOName,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
         ),
         actions: [IconButton(icon: Icon(Icons.unfold_more), onPressed: () {})],
       ),
