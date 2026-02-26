@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supply_co/core_pages/homepage.dart';
+import 'package:supply_co/intro_pages/auth_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     await Future.delayed(Duration(seconds: 3),
     () {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> HomePage()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> AuthPage()));
     }
 
     );
