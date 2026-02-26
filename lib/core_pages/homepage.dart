@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supply_co/pages/stockpage.dart';
+import 'package:supply_co/core_pages/stockpage.dart';
 import 'package:supply_co/services/supabase_service.dart';
 
 // ─────────────────────────────────────────────
