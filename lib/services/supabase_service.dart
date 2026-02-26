@@ -3,16 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   final _supabase = Supabase.instance.client;
 
-  /// Fetch all stores from Supabase, ordered by name.
-  /// Expects columns: id, name, district, place (optional), code (optional),
-  /// distance_km (optional – can be computed server-side or left null).
+  // 1. Fetch All Stores (Fixed Column Names)
   Future<List<Map<String, dynamic>>> fetchStores() async {
     try {
       final response = await _supabase
           .from('stores')
-          .select()
+          // 🟢 FIXED: Only asking for columns that exist in your DB Schema
+          // Removed: 'place', 'phone_contact'
+          .select('id, name, district, address, govt_store_id') 
           .order('name', ascending: true);
-
+      
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print('Error fetching stores: $e');
@@ -20,34 +20,43 @@ class SupabaseService {
     }
   }
 
-  /// Fetch stores filtered by district and/or a search query.
-  /// The search matches against name, place, and code columns using
-  /// Supabase's ilike operator (case-insensitive).
-  Future<List<Map<String, dynamic>>> searchStores({
-    String? district,
-    String query = '',
-  }) async {
+  // 2. Fetch Nearby Stores (RPC)
+  Future<List<Map<String, dynamic>>> fetchNearbyStores(double lat, double long) async {
     try {
-      var builder = _supabase.from('stores').select();
-
-      if (district != null && district.isNotEmpty) {
-        builder = builder.eq('district', district) as dynamic;
-      }
-
-      if (query.isNotEmpty) {
-        // Search across name, place, and code columns
-        builder = builder.or(
-          'name.ilike.%$query%,place.ilike.%$query%,code.ilike.%$query%',
-        ) as dynamic;
-      }
-
-      final response =
-          await (builder as dynamic).order('name', ascending: true);
-
+      final response = await _supabase.rpc('get_nearby_stores', params: {
+        'lat': lat, 
+        'long': long
+      });
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error searching stores: $e');
+      print('Error fetching nearby: $e');
       return [];
+    }
+  }
+
+  // 3. Fetch Stock (JOIN Query)
+  Future<List<Map<String, dynamic>>> fetchStock(int storeId) async {
+    try {
+      final response = await _supabase
+          .from('stock')
+          .select('quantity, price, status, items(name, unit, image_url, category)')
+          .eq('store_id', storeId); 
+
+      return List<Map<String, dynamic>>.from(response.map((row) {
+        final item = row['items'] as Map<String, dynamic>;
+        return {
+          'name': item['name'],
+          'quantity': row['quantity'],
+          'unit': item['unit'],
+          'price': row['price'],
+          'status': row['status'],
+          'image_url': item['image_url'],
+          'category': item['category'],
+        };
+      }));
+    } catch (e) {
+      print('Error fetching stock: $e');
+      throw e;
     }
   }
 }

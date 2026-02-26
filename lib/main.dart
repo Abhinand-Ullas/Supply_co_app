@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/intro_pages/splashscreen.dart';
-import 'package:supply_co/core_pages/homepage.dart';
-
-// A global key to access the navigator from anywhere (including auth listener)
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   // 1. Load the .env file
   await dotenv.load(fileName: ".env");
   // 2. Initialize Supabase using the environment variables
