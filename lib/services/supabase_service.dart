@@ -56,7 +56,7 @@ class SupabaseService {
       }));
     } catch (e) {
       print('Error fetching stock: $e');
-      return [];
+      throw e;
     }
   }
 }

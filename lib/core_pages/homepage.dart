@@ -149,15 +149,33 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
   }
 
   /// Opens StockPage with cached stock pre-loaded as fallback.
-  void _navigateToLastVisited() {
+void _navigateToLastVisited() {
+    // 1. Safety Check: Do we have a snapshot?
     if (_lastSnapshot == null) return;
-    final store = Map<String, dynamic>.from(_lastSnapshot!['store_info']);
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => StockPage(
-        storeId: store['id'], // 🟢 PASS THE ID
-        supplyCOName: store['name'] ?? 'SupplyCo',
+    
+    final storeInfo = Map<String, dynamic>.from(_lastSnapshot!['store_info']);
+    
+    // 2. Extract the STOCK list from the snapshot
+    // If it's null, we pass an empty list (which triggers the "No Stock" message)
+    final List<Map<String, dynamic>> cachedStockList = 
+        _lastSnapshot!['stock_data'] != null 
+            ? List<Map<String, dynamic>>.from(_lastSnapshot!['stock_data']) 
+            : [];
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StockPage(
+          // 🟢 Pass Store Details
+          storeId: storeInfo['id'] ?? 0, 
+          supplyCOName: storeInfo['name'] ?? 'SupplyCo',
+          
+          // 🟢 CRITICAL FIX: Pass the actual offline data here!
+          cachedStock: cachedStockList,
+          cachedAt: _lastSnapshot!['last_updated'],
+        ),
       ),
-    ));
+    );
   }
 
   // ── Build ──────────────────────────────────────────────────
