@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/intro_pages/splashscreen.dart';
+import 'package:supply_co/services/local_storage_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Init Local Storage
+  await StorageService.init();
 
   // 1. Load the .env file
   await dotenv.load(fileName: ".env");

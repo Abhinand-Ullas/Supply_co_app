@@ -32,7 +32,9 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.8.0  # Check for the latest version
   flutter_dotenv: ^6.0.0  # Add this line
-
+  shared_preferences: ^2.2.2
+  connectivity_plus: ^6.0.0
+  google_sign_in : ^7.2.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

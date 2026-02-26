@@ -1,331 +1,196 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  StockPage — shows stock for a given SupplyCo store.
+//
+//  Offline flow:
+//    1. If cachedStock is passed in, display it immediately with a banner
+//       showing "Last updated X mins ago".
+//    2. In the background, try to fetch fresh stock from Supabase.
+//    3. If fetch succeeds → replace cached view, hide banner, save new snapshot.
+//    4. If fetch fails (offline) → keep showing cached data, banner stays.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
-
-// Commodity model to represent each stock item
-class Commodity {
-  final String id;
-  final String name;
-  final String quantity;
-  final String status; // 'available', 'low_stock', 'out_of_stock'
-
-  Commodity({
-    required this.id,
-    required this.name,
-    required this.quantity,
-    required this.status,
-  });
-}
+import 'package:supply_co/services/supabase_service.dart';
+import 'package:supply_co/services/local_storage_service.dart';
 
 class StockPage extends StatefulWidget {
-  final String supplyCOName; // Supply co name passed from homepage
+  // 🟢 NEW: This is the missing parameter causing your error
+  final int storeId; 
+  final String supplyCOName;
 
-  const StockPage({super.key, required this.supplyCOName});
+  // Optional: For offline loading
+  final List<Map<String, dynamic>>? cachedStock;
+  final String? cachedAt;
+
+  const StockPage({
+    super.key,
+    required this.storeId, // 🟢 NOW DEFINED HERE
+    required this.supplyCOName,
+    this.cachedStock,
+    this.cachedAt,
+  });
 
   @override
   State<StockPage> createState() => _StockPageState();
 }
 
-class _StockPageState extends State<StockPage>
-    with SingleTickerProviderStateMixin {
-  // Search controller
-  TextEditingController searchController = TextEditingController();
+class _StockPageState extends State<StockPage> {
+  static const _green = Color(0xFF1B4D3E);
+  final _supabaseService = SupabaseService();
 
-  // Tab controller for Stock Items / Special Items
-  late TabController tabController;
-
-  // Sample commodity data (will be fetched from backend later)
-  List<Commodity> commodities = [
-    Commodity(
-      id: '1',
-      name: 'Matta Rice',
-      quantity: '500+ kg',
-      status: 'available',
-    ),
-    Commodity(
-      id: '2',
-      name: 'Wheat Flour',
-      quantity: '250 kg',
-      status: 'available',
-    ),
-    Commodity(
-      id: '3',
-      name: 'Coconut Oil',
-      quantity: '200+ L',
-      status: 'available',
-    ),
-    Commodity(id: '4', name: 'Sugar', quantity: '802 mL', status: 'low_stock'),
-    Commodity(
-      id: '5',
-      name: 'White Rice',
-      quantity: '100 kg',
-      status: 'available',
-    ),
-    Commodity(
-      id: '6',
-      name: 'Jaggery',
-      quantity: '100 kg',
-      status: 'out_of_stock',
-    ),
-  ];
-
-  // Filtered commodities based on search
-  List<Commodity> filteredCommodities = [];
+  List<Map<String, dynamic>> _stock = [];
+  bool _isLoading = true;
+  bool _isShowingCache = false; // true = displaying saved data
+  String? _cacheTimestamp;      // shown in the banner
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 2, vsync: this);
-    filteredCommodities = commodities; // Initially show all
-  }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    tabController.dispose();
-    super.dispose();
-  }
-
-  // Function to filter commodities based on search
-  void filterCommodities(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        filteredCommodities = commodities;
-      } else {
-        filteredCommodities = commodities
-            .where(
-              (commodity) =>
-                  commodity.name.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
-    });
-  }
-
-  // Function to get color based on stock status
-  Color getStatusColor(String status) {
-    switch (status) {
-      case 'available':
-        return Colors.green;
-      case 'low_stock':
-        return Colors.orange;
-      case 'out_of_stock':
-        return Colors.red;
-      default:
-        return Colors.grey;
+    // 1. Show Cached Data immediately if available
+    if (widget.cachedStock != null && widget.cachedStock!.isNotEmpty) {
+      _stock = widget.cachedStock!;
+      _isLoading = false;
+      _isShowingCache = true;
+      _cacheTimestamp = widget.cachedAt;
     }
+
+    // 2. Fetch Fresh Data using the ID
+    _fetchFreshStock();
   }
 
-  // Function to get status text
-  String getStatusText(String status) {
-    switch (status) {
-      case 'available':
-        return 'Available';
-      case 'low_stock':
-        return 'Low Stock';
-      case 'out_of_stock':
-        return 'Out of Stock';
-      default:
-        return 'Unknown';
+  Future<void> _fetchFreshStock() async {
+    try {
+      // 🟢 FIXED: Using storeId (int) instead of parsing the name
+      final freshStock = await _supabaseService.fetchStock(widget.storeId);
+
+      // Save snapshot for next time
+      final storeInfo = {
+        'id': widget.storeId,
+        'name': widget.supplyCOName,
+        'district': freshStock.isNotEmpty ? freshStock.first['district'] ?? '' : '',
+      };
+      await StorageService.saveStoreSnapshot(storeInfo, freshStock);
+
+      if (mounted) {
+        setState(() {
+          _stock = freshStock;
+          _isLoading = false;
+          _isShowingCache = false; // We are live!
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      // Offline fallback logic
+      if (mounted) {
+        setState(() {
+          _isLoading = _stock.isEmpty; // Keep showing cache if available
+          _errorMessage = _stock.isEmpty ? 'Unable to load stock.' : null;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Color(0xFF1B5E20), // Dark green color
-        elevation: 0,
-        title: Text(
-          widget.supplyCOName,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
+        backgroundColor: _green,
+        foregroundColor: Colors.white,
+        title: Text(widget.supplyCOName, style: const TextStyle(fontSize: 16)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() { _isLoading = true; _errorMessage = null; });
+              _fetchFreshStock();
+            },
           ),
-        ),
-        actions: [IconButton(icon: Icon(Icons.unfold_more), onPressed: () {})],
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Updated text
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.search, color: Colors.grey, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Last updated 10 minutes ago',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-
-            // Search bar
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: searchController,
-                onChanged: filterCommodities,
-                decoration: InputDecoration(
-                  hintText: 'Search commodities',
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-
-            // Tabs: Stock Items and Special Items
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TabBar(
-                  controller: tabController,
-                  unselectedLabelColor: Colors.grey,
-                  labelColor: Colors.white,
-                  indicator: BoxDecoration(
-                    color: Color(0xFF2E7D32), // Green color for selected tab
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  tabs: [
-                    Tab(
-                      child: Text(
-                        'Stock Items',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Tab(
-                      child: Text(
-                        'Special',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ListView.builder for commodities
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: filteredCommodities.length,
-                itemBuilder: (context, index) {
-                  Commodity commodity = filteredCommodities[index];
-                  return CommodityCard(
-                    commodity: commodity,
-                    statusColor: getStatusColor(commodity.status),
-                    statusText: getStatusText(commodity.status),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 20),
-          ],
-        ),
+      body: Column(
+        children: [
+          if (_isShowingCache && _cacheTimestamp != null)
+             _CachedDataBanner(
+               timeAgo: StorageService.getTimeAgo(_cacheTimestamp!),
+               onRefresh: _fetchFreshStock,
+             ),
+          Expanded(child: _buildBody()),
+        ],
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading && _stock.isEmpty) return const Center(child: CircularProgressIndicator());
+
+    if (_errorMessage != null && _stock.isEmpty) {
+      return Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.grey)));
+    }
+
+    if (_stock.isEmpty) {
+      return const Center(child: Text("No items found in this store.", style: TextStyle(color: Colors.grey)));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _stock.length,
+      itemBuilder: (context, index) {
+        final item = _stock[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: _green.withOpacity(0.1),
+              child: const Icon(Icons.shopping_bag, color: _green),
+            ),
+            title: Text(item['name'] ?? 'Item', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text("${item['quantity']} ${item['unit'] ?? ''} • ₹${item['price'] ?? '--'}"),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: (item['status'] == 'Available') ? Colors.green.shade50 : Colors.red.shade50,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                item['status'] ?? 'Available',
+                style: TextStyle(
+                  color: (item['status'] == 'Available') ? Colors.green.shade800 : Colors.red.shade800,
+                  fontSize: 12, 
+                  fontWeight: FontWeight.bold
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-// Widget to display individual commodity card
-class CommodityCard extends StatelessWidget {
-  final Commodity commodity;
-  final Color statusColor;
-  final String statusText;
-
-  const CommodityCard({
-    required this.commodity,
-    required this.statusColor,
-    required this.statusText,
-  });
+// ─────────────────────────────────────────────
+//  Banner Widget
+// ─────────────────────────────────────────────
+class _CachedDataBanner extends StatelessWidget {
+  final String timeAgo;
+  final VoidCallback onRefresh;
+  const _CachedDataBanner({required this.timeAgo, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      color: Colors.amber.shade100,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(
         children: [
-          // Image placeholder
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.image_not_supported,
-                color: Colors.grey[600],
-                size: 40,
-              ),
-            ),
-          ),
-          SizedBox(width: 16),
-
-          // Commodity details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  commodity.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  commodity.quantity,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                SizedBox(height: 12),
-
-                // Status badge
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const Icon(Icons.wifi_off, size: 16, color: Colors.brown),
+          const SizedBox(width: 8),
+          Expanded(child: Text("Offline Mode • Updated $timeAgo", style: const TextStyle(color: Colors.brown, fontSize: 13))),
+          GestureDetector(
+            onTap: onRefresh,
+            child: const Text("Refresh", style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold)),
+          )
         ],
       ),
     );
