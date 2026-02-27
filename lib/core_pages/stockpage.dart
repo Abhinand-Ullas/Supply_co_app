@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 import 'package:supply_co/services/supabase_service.dart';
 import 'package:supply_co/services/local_storage_service.dart';
+import 'package:supply_co/core_pages/stock_empty.dart';
 
 class StockPage extends StatefulWidget {
   // 🟢 NEW: This is the missing parameter causing your error
@@ -34,8 +35,20 @@ class StockPage extends StatefulWidget {
 }
 
 class _StockPageState extends State<StockPage> {
+
+
+
+
+  final TextEditingController _searchController = TextEditingController();
+String _searchQuery = "";
+
+
+
+
   static const _green = Color(0xFF1B4D3E);
   final _supabaseService = SupabaseService();
+
+  bool _isStockSelected = true;
 
   List<Map<String, dynamic>> _stock = [];
   bool _isLoading = true;
@@ -109,20 +122,146 @@ class _StockPageState extends State<StockPage> {
           ),
         ],
       ),
+
+
+
+
+
       body: Column(
-        children: [
-          if (_isShowingCache && _cacheTimestamp != null)
-             _CachedDataBanner(
-               timeAgo: StorageService.getTimeAgo(_cacheTimestamp!),
-               onRefresh: _fetchFreshStock,
-             ),
-          Expanded(child: _buildBody()),
-        ],
+  children: [
+
+    if (_isShowingCache && _cacheTimestamp != null)
+      _CachedDataBanner(
+        timeAgo: StorageService.getTimeAgo(_cacheTimestamp!),
+        onRefresh: _fetchFreshStock,
       ),
+
+    // 🔍 SEARCH BAR
+    Padding(
+      padding: const EdgeInsets.all(12),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: "Search items...",
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: const Color.fromARGB(255, 234, 233, 233),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+      ),
+    ),
+
+
+
+
+
+    // 🔁 Toggle Section
+    if (_searchQuery.isEmpty)
+    
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  child: Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade300,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      children: [
+
+        // STOCK TAB
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _isStockSelected = true;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: _isStockSelected ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                "Stock Items",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _isStockSelected
+                      ? Colors.green.shade800
+                      : Colors.black54,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // SPECIAL TAB
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _isStockSelected = false;
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: !_isStockSelected ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                "Special",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: !_isStockSelected
+                      ? Colors.green.shade800
+                      : Colors.black54,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+    
+
+
+    Expanded(child: _buildBody()),
+  ],
+),
     );
   }
 
   Widget _buildBody() {
+
+
+
+    if (!_isStockSelected) {
+  return const Center(
+    child: Text(
+      "No special items available.",
+      style: TextStyle(color: Colors.grey),
+    ),
+  );
+}
+
+
+
+
     if (_isLoading && _stock.isEmpty) return const Center(child: CircularProgressIndicator());
 
     if (_errorMessage != null && _stock.isEmpty) {
@@ -133,39 +272,95 @@ class _StockPageState extends State<StockPage> {
       return const Center(child: Text("No items found in this store.", style: TextStyle(color: Colors.grey)));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _stock.length,
-      itemBuilder: (context, index) {
-        final item = _stock[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          child: ListTile(
-            leading: CircleAvatar(
+
+
+
+
+    List<Map<String, dynamic>> filteredStock = _stock.where((item) {
+  final name = (item['name'] ?? '').toString().toLowerCase();
+  return name.contains(_searchQuery.toLowerCase());
+}).toList();
+
+// If user searched but no results found
+if (_searchQuery.isNotEmpty && filteredStock.isEmpty) {
+  return const StockNotFound();
+}
+
+
+
+    return GridView.builder(
+  padding: const EdgeInsets.all(16),
+  itemCount: filteredStock.length,
+  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2, // 👈 2 items per row
+    crossAxisSpacing: 20,
+    mainAxisSpacing: 15,
+    childAspectRatio: 9 / 2, // controls height
+  ),
+  itemBuilder: (context, index) {
+    final item = filteredStock[index];
+
+    return Card(
+      color: const Color.fromARGB(255, 231, 243, 233),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+
+            // Icon
+            CircleAvatar(
               backgroundColor: _green.withOpacity(0.1),
               child: const Icon(Icons.shopping_bag, color: _green),
             ),
-            title: Text(item['name'] ?? 'Item', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text("${item['quantity']} ${item['unit'] ?? ''} • ₹${item['price'] ?? '--'}"),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: (item['status'] == 'Available') ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.circular(4),
+
+            // Item Name
+            Text(
+              item['name'] ?? 'Item',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
               ),
-              child: Text(
-                item['status'] ?? 'Available',
-                style: TextStyle(
-                  color: (item['status'] == 'Available') ? Colors.green.shade800 : Colors.red.shade800,
-                  fontSize: 12, 
-                  fontWeight: FontWeight.bold
+            ),
+
+            // Quantity & Price
+            Text(
+              "${item['quantity']} ${item['unit'] ?? ''} • ₹${item['price'] ?? '--'}",
+              style: const TextStyle(fontSize: 12),
+            ),
+
+            // Status
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (item['status'] == 'Available')
+                      ? const Color.fromARGB(255, 217, 248, 219)
+                      : const Color.fromARGB(255, 255, 225, 230),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  item['status'] ?? 'Available',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: (item['status'] == 'Available')
+                        ? Colors.green.shade800
+                        : Colors.red.shade800,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
+  },
+);
   }
 }
 
