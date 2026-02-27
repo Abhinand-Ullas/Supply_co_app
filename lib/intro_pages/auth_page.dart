@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/core_pages/homepage.dart';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
@@ -9,26 +10,17 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  // Variable to track which tab is selected (true for Register, false for Login)
   bool isRegisterTab = true;
 
-  // Text controllers for Register tab
   final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController mobileRegisterController =
-      TextEditingController();
+  final TextEditingController mobileRegisterController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
-
-  // Text controllers for Login tab
   final TextEditingController mobileLoginController = TextEditingController();
   final TextEditingController loginOtpController = TextEditingController();
 
-  // Variable to track if OTP is requested (Register tab)
   bool isOtpRequested = false;
-
-  // Variable to track if OTP is requested (Login tab)
   bool isLoginOtpRequested = false;
 
-  // Loading state to show spinner on buttons
   bool isLoading_otpfor_registration = false;
   bool isLoading_for_registration = false;
   bool isLoading_google_signin = false;
@@ -36,7 +28,6 @@ class _AuthPageState extends State<AuthPage> {
   bool isLoading_otpfor_login = false;
   bool isLoading_login = false;
 
-  // Get the Supabase client instance (initialized in main.dart)
   final supabase = Supabase.instance.client;
 
   @override
@@ -50,75 +41,50 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   // ─────────────────────────────────────────────
-  // PHONE AUTH — SEND OTP
-  // Called when user taps "Get OTP" in Register tab
+  // PHONE AUTH — SEND OTP (Register)
   // ─────────────────────────────────────────────
   Future<void> _sendOtp(String phone) async {
-    // Format the phone number to E.164 format required by Supabase (+91XXXXXXXXXX)
     final formattedPhone = '+91$phone';
-
-    setState(() => isLoading_otpfor_registration = true); // Show loading spinner
-
+    setState(() => isLoading_otpfor_registration = true);
     try {
-      // Ask Supabase to send an OTP SMS to this number
       await supabase.auth.signInWithOtp(phone: formattedPhone);
-
       setState(() {
-        isOtpRequested = true; // Show OTP input field
+        isOtpRequested = true;
         isLoading_otpfor_registration = false;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("OTP sent successfully!")),
       );
     } on AuthException catch (e) {
-      // AuthException is thrown by Supabase for auth-related errors
       setState(() => isLoading_otpfor_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)), // Show error from Supabase
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
-      // Catch any other unexpected errors
       setState(() => isLoading_otpfor_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   // ─────────────────────────────────────────────
   // PHONE AUTH — VERIFY OTP & REGISTER
-  // Called when user taps "REGISTER" button
   // ─────────────────────────────────────────────
   Future<void> _verifyOtpAndRegister() async {
     final formattedPhone = '+91${mobileRegisterController.text}';
     final otp = otpController.text.trim();
     final fullName = fullNameController.text.trim();
-
     setState(() => isLoading_for_registration = true);
-
     try {
-      // Verify the OTP the user entered
-      // OtpType.sms tells Supabase this is a phone OTP (not email)
       final response = await supabase.auth.verifyOTP(
         phone: formattedPhone,
         token: otp,
         type: OtpType.sms,
       );
-
-      // If OTP is correct, response.user will not be null
       if (response.user != null) {
-        // Save the user's full name in the 'profiles' table
-        // upsert = insert if not exists, update if exists
         await supabase.from('user_details').upsert({
-          'id': response.user!.id,       // User's unique Supabase ID
-          'name': fullName,          // Name entered by user
-          'phone_number': formattedPhone,        // Their phone number
+          'id': response.user!.id,
+          'name': fullName,
+          'phone_number': formattedPhone,
         });
-
         setState(() => isLoading_for_registration = false);
-
-        // Navigate to HomePage after successful registration
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -128,24 +94,18 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on AuthException catch (e) {
       setState(() => isLoading_for_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_for_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   // ─────────────────────────────────────────────
   // PHONE AUTH — SEND LOGIN OTP
-  // Called when user taps "Get OTP" in Login tab
   // ─────────────────────────────────────────────
   Future<void> _sendLoginOtp() async {
     final phone = mobileLoginController.text.trim();
-
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter mobile number")),
@@ -158,86 +118,64 @@ class _AuthPageState extends State<AuthPage> {
       );
       return;
     }
-
     final formattedPhone = '+91$phone';
     setState(() => isLoading_otpfor_login = true);
-
     try {
-      // Send OTP SMS to the login phone number
       await supabase.auth.signInWithOtp(phone: formattedPhone);
-
       setState(() {
-        isLoginOtpRequested = true; // Show OTP field and LOGIN button
+        isLoginOtpRequested = true;
         isLoading_otpfor_login = false;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("OTP sent successfully!")),
       );
     } on AuthException catch (e) {
       setState(() => isLoading_otpfor_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_otpfor_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   // ─────────────────────────────────────────────
   // PHONE AUTH — VERIFY OTP & LOGIN
-  // Called when user taps "LOGIN" button in Login tab
   // ─────────────────────────────────────────────
   Future<void> _verifyOtpAndLogin() async {
     final formattedPhone = '+91${mobileLoginController.text.trim()}';
     final otp = loginOtpController.text.trim();
-
     if (otp.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter OTP")),
       );
       return;
     }
-
     setState(() => isLoading_login = true);
-
     try {
-      // Verify the OTP entered by user
       final response = await supabase.auth.verifyOTP(
         phone: formattedPhone,
         token: otp,
         type: OtpType.sms,
       );
-
       setState(() => isLoading_login = false);
-
       if (response.user != null) {
-        // Check if this number exists in profiles table (i.e., user registered before)
         final profile = await supabase
             .from('user_details')
             .select()
             .eq('id', response.user!.id)
-            .maybeSingle(); // Returns null if not found, no error thrown
-
+            .maybeSingle();
         if (profile == null) {
-          // Number not registered — redirect to register tab
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Number not registered. Please register first."),
-              ),
+              const SnackBar(content: Text("Number not registered. Please register first.")),
             );
             setState(() {
-              isRegisterTab = true;      // Switch to Register tab
-              isLoginOtpRequested = false; // Reset login OTP state
+              isRegisterTab = true;
+              isLoginOtpRequested = false;
               loginOtpController.clear();
             });
           }
         } else {
-          // User found — navigate to HomePage
           if (mounted) {
             Navigator.pushReplacement(
               context,
@@ -248,58 +186,97 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on AuthException catch (e) {
       setState(() => isLoading_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   // ─────────────────────────────────────────────
   // GOOGLE SIGN IN
-  // Called when user taps "Continue with Google"
+  // Register tab: checks name field → proceeds → saves profile to db
+  // Login tab: checks if user exists → if not, redirects to register
   // ─────────────────────────────────────────────
   Future<void> _signInWithGoogle() async {
+
+    // REGISTER TAB ONLY: Stop if name field is empty
+    if (isRegisterTab && fullNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your name before continuing")),
+      );
+      return; // Don't proceed — user must fill name field first
+    }
+
     setState(() => isLoading_google_signin = true);
 
     try {
-      // Opens Google login screen in browser
-      // redirectTo must match what you set in Google Cloud Console & Supabase
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: 'supplyco://login-callback/',
         authScreenLaunchMode: LaunchMode.externalApplication,
-        // ↑ Replace 'supplyco' with your actual app's scheme from AndroidManifest.xml
       );
 
       setState(() => isLoading_google_signin = false);
 
-      // After Google login, Supabase handles session automatically
-      // Listen to auth state changes to navigate (set up in main.dart ideally)
-      // But we also listen here as a fallback
-      supabase.auth.onAuthStateChange.listen((data) {
+      // Listen for when Google OAuth completes and user returns to app
+      supabase.auth.onAuthStateChange.listen((data) async {
         if (data.event == AuthChangeEvent.signedIn && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomePage()),
-          );
+          final user = data.session?.user;
+          if (user == null) return;
+
+          // Check if this Google account already has a profile in user_details
+          final existingProfile = await supabase
+              .from('user_details')
+              .select()
+              .eq('id', user.id)
+              .maybeSingle(); // Returns null if not found
+
+          if (existingProfile != null) {
+            // EXISTING USER → go to HomePage directly
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          } else {
+            if (isRegisterTab) {
+              // NEW USER on Register tab → save profile to user_details
+              // Name comes from the name text field the user already filled
+              // Email comes from Google account automatically
+              await supabase.from('user_details').upsert({
+                'id': user.id,
+                'name': fullNameController.text.trim(),
+                'email': user.email ?? '',
+              });
+
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              }
+            } else {
+              // LOGIN TAB: no account found → tell user to register first
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("No account found. Please register first."),
+                  ),
+                );
+                setState(() => isRegisterTab = true); // Switch to register tab
+              }
+            }
+          }
         }
       });
-
     } on AuthException catch (e) {
       setState(() => isLoading_google_signin = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_google_signin = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -322,7 +299,6 @@ class _AuthPageState extends State<AuthPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Toggle Tab Section
             Container(
               margin: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -456,46 +432,37 @@ class _AuthPageState extends State<AuthPage> {
           const SizedBox(height: 20),
 
           if (!isOtpRequested)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                // ── CHANGED: calls _sendOtp() instead of just setState ──
-                onPressed: isLoading_otpfor_registration
-                    ? null // Disable button while loading
-                    : () {
-                        if (fullNameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter your full name")),
-                          );
-                          return;
-                        }
-                        if (mobileRegisterController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter mobile number")),
-                          );
-                          return;
-                        }
-                        if (mobileRegisterController.text.length != 10) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter a valid 10-digit mobile number")),
-                          );
-                          return;
-                        }
-                        _sendOtp(mobileRegisterController.text.trim()); // ← calls Supabase
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4D3E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                // Show spinner if loading, otherwise show text
-                child: isLoading_otpfor_registration
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Get OTP",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-              ),
+            _authButton(
+              text: "Get OTP",
+              isLoading: isLoading_otpfor_registration,
+              onPressed: () {
+                if (fullNameController.text.trim().isEmpty &&
+                    mobileRegisterController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter your name & number")),
+                  );
+                  return;
+                }
+                if (fullNameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter your name")),
+                  );
+                  return;
+                }
+                if (mobileRegisterController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter mobile number")),
+                  );
+                  return;
+                }
+                if (mobileRegisterController.text.length != 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter a valid 10-digit mobile number")),
+                  );
+                  return;
+                }
+                _sendOtp(mobileRegisterController.text.trim());
+              },
             ),
 
           if (isOtpRequested) ...[
@@ -523,7 +490,6 @@ class _AuthPageState extends State<AuthPage> {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                // ── CHANGED: Resend OTP is now tappable ──
                 onTap: () => _sendOtp(mobileRegisterController.text.trim()),
                 child: Text(
                   "Resend OTP",
@@ -532,69 +498,80 @@ class _AuthPageState extends State<AuthPage> {
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                // ── CHANGED: calls _verifyOtpAndRegister() ──
-                onPressed: isLoading_for_registration
-                    ? null
-                    : () {
-                        if (otpController.text.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please enter OTP")),
-                          );
-                          return;
-                        }
-                        _verifyOtpAndRegister(); // ← verifies OTP & saves profile
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4D3E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: isLoading_for_registration
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "REGISTER",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-              ),
+            _authButton(
+              text: "REGISTER",
+              isLoading: isLoading_for_registration,
+              onPressed: () {
+                if (otpController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enter OTP")),
+                  );
+                  return;
+                }
+                _verifyOtpAndRegister();
+              },
             ),
           ],
 
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: Divider(color: Colors.grey[300])),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text("Or", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-              ),
-              Expanded(child: Divider(color: Colors.grey[300])),
-            ],
-          ),
+          _orDivider(),
           const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              // ── CHANGED: calls _signInWithGoogle() ──
-              onPressed: isLoading_google_signin ? null : _signInWithGoogle,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B4D3E),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-              child: isLoading_google_signin
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Continue with Google",
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-            ),
+          _authButton(
+            text: "Continue with Google",
+            isLoading: isLoading_google_signin,
+            onPressed: _signInWithGoogle,
           ),
           const SizedBox(height: 30),
         ],
       ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // REUSABLE BUTTON WIDGET
+  // Used for all buttons in this page
+  // ─────────────────────────────────────────────
+  Widget _authButton({
+    required String text,
+    required VoidCallback? onPressed,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        // If isLoading is true → disable button (null disables it)
+        // Otherwise → run the onPressed function
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1B4D3E),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
+        // Show spinner while loading, otherwise show button text
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                text,
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // REUSABLE OR DIVIDER WIDGET
+  // The "─── Or ───" divider used in both forms
+  // ─────────────────────────────────────────────
+  Widget _orDivider() {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: Colors.grey[300])),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text("Or", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+        ),
+        Expanded(child: Divider(color: Colors.grey[300])),
+      ],
     );
   }
 
@@ -604,8 +581,6 @@ class _AuthPageState extends State<AuthPage> {
       child: Column(
         children: [
           const SizedBox(height: 40),
-
-          // Mobile Number TextField with Country Code
           TextField(
             controller: mobileLoginController,
             decoration: InputDecoration(
@@ -638,33 +613,16 @@ class _AuthPageState extends State<AuthPage> {
             ),
             keyboardType: TextInputType.phone,
           ),
-
           const SizedBox(height: 20),
 
-          // Get OTP Button — only shown before OTP is requested
           if (!isLoginOtpRequested)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                // Sends OTP to the entered phone number
-                onPressed: isLoading_otpfor_login ? null : _sendLoginOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4D3E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: isLoading_otpfor_login
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Get OTP",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-              ),
+            _authButton(
+              text: "Get OTP",
+              isLoading: isLoading_otpfor_login,
+              onPressed: _sendLoginOtp,
             ),
 
-          // OTP Field + Resend + LOGIN Button — appears after OTP is sent
           if (isLoginOtpRequested) ...[
-            // OTP input field
             TextField(
               controller: loginOtpController,
               decoration: InputDecoration(
@@ -684,14 +642,10 @@ class _AuthPageState extends State<AuthPage> {
               ),
               keyboardType: TextInputType.number,
             ),
-
             const SizedBox(height: 8),
-
-            // Resend OTP — tappable text aligned to right
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                // Re-sends OTP to the same number
                 onTap: () => _sendLoginOtp(),
                 child: Text(
                   "Resend OTP",
@@ -699,65 +653,22 @@ class _AuthPageState extends State<AuthPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // LOGIN Button — verifies OTP and checks if user is registered
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                // Verifies OTP and logs in
-                onPressed: isLoading_login ? null : _verifyOtpAndLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B4D3E),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: isLoading_login
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "LOGIN",
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-              ),
+            _authButton(
+              text: "LOGIN",
+              isLoading: isLoading_login,
+              onPressed: _verifyOtpAndLogin,
             ),
           ],
 
           const SizedBox(height: 30),
-
-          // Divider with "Or" text
-          Row(
-            children: [
-              Expanded(child: Divider(color: Colors.grey[300])),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text("Or", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-              ),
-              Expanded(child: Divider(color: Colors.grey[300])),
-            ],
-          ),
-
+          _orDivider(),
           const SizedBox(height: 20),
-
-          // Continue with Google Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoading_google_signin ? null : _signInWithGoogle,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B4D3E),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              ),
-              child: isLoading_google_signin
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Continue with Google",
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-            ),
+          _authButton(
+            text: "Continue with Google",
+            isLoading: isLoading_google_signin,
+            onPressed: _signInWithGoogle,
           ),
-
           const SizedBox(height: 30),
         ],
       ),
