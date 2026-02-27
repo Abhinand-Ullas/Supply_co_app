@@ -59,4 +59,61 @@ class SupabaseService {
       throw e;
     }
   }
+  // ─────────────────────────────────────────────
+  //  USER PREFERENCES (Profile)
+  // ─────────────────────────────────────────────
+
+  /// 1. Fetch User Details (Safe to call even if row doesn't exist)
+  Future<Map<String, dynamic>?> fetchUserDetails() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+
+    try {
+      final data = await _supabase
+          .from('user_details')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle(); // 'maybeSingle' returns null if no row found (instead of crashing)
+      return data;
+    } catch (e) {
+      print("Error fetching profile: $e");
+      return null;
+    }
+  }
+
+  /// 2. Update User Details (Flexible Upsert)
+  /// You can call this with just ONE parameter (e.g., only district)
+  /// and it won't erase the other fields.
+  Future<void> updateUserDetails({
+    String? district,
+    String? lastStoreId,
+    String? fcmToken,
+    String? name,
+    String? phone,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    // 1. Prepare the data packet
+    // We ALWAYS include 'id' so Supabase knows which row to update/create.
+    final Map<String, dynamic> updates = {
+      'id': user.id,
+      // If you had an 'updated_at' column, you'd add it here:
+      // 'updated_at': DateTime.now().toIso8601String(), 
+    };
+
+    // 2. Only add fields that are NOT null
+    if (district != null) updates['selected_district'] = district;
+    if (lastStoreId != null) updates['last_selected_supplyco'] = lastStoreId;
+    if (fcmToken != null) updates['fcm_token'] = fcmToken;
+    if (name != null) updates['name'] = name;
+    if (phone != null) updates['phone_number'] = phone;
+
+    try {
+      // 3. Perform UPSERT (Update if exists, Insert if new)
+      await _supabase.from('user_details').upsert(updates);
+    } catch (e) {
+      print("Error updating profile: $e");
+    }
+  }
 }

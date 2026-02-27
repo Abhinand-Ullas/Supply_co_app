@@ -1,7 +1,10 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:supply_co/core_pages/stockpage.dart';
+import 'package:supply_co/services/notification_service.dart';
 import 'package:supply_co/services/supabase_service.dart';
 import 'package:supply_co/services/local_storage_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +27,8 @@ class _HomePageState extends State<HomePage> {
   bool _loadingStores = true;
   List<Map<String, dynamic>> _suggestions = [];
   List<Map<String, dynamic>>? _searchResults;
+  //NEW: Holds the shop selected from dropdown to show in the "down area"
+  List<Map<String, dynamic>> _previewStores = [];
 
   // ── Last Visited ───────────────────────────────────────────
   Map<String, dynamic>? _lastSnapshot; // { store_info, stock_data, last_updated }
@@ -31,9 +36,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // Setup FCM for push notifications
+    NotificationService().initNotifications();
+
+
+
     _lastSnapshot = StorageService.getStoreSnapshot(); // sync, instant
     _loadStoresAndDistricts();
     _searchController.addListener(_onSearchChanged);
+
+    //Load Cloud Preferences
+    _loadUserPreferences();
   }
 
   @override
@@ -59,6 +72,29 @@ class _HomePageState extends State<HomePage> {
       // Offline — cached data is already showing
     }
   }
+  void setupFcm() async {
+    // Ensure Firebase is initialized first
+    if (Firebase.apps.isEmpty) {
+      print('HomePage.setupFcm: Firebase not initialized yet');
+      return;
+    }
+    try {
+      // 1. Get the token
+      String? token = await FirebaseMessaging.instance.getToken();
+
+      // 2. Save it to Supabase
+      if (token != null) {
+        await SupabaseService().updateUserDetails(fcmToken: token);
+      }
+
+      // 3. Listen for token refreshes (important!)
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        SupabaseService().updateUserDetails(fcmToken: newToken);
+      });
+    } catch (e) {
+      print('HomePage.setupFcm error: $e');
+    }
+  }
 
   void _applyStores(List<Map<String, dynamic>> stores) {
     final districtSet = <String>{};
@@ -74,7 +110,20 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-
+  Future<void> _loadUserPreferences() async {
+    final data = await _supabaseService.fetchUserDetails();
+    
+    // If we found data and the widget is still on screen...
+    if (data != null && mounted) {
+      setState(() {
+        // 1. Restore District
+        if (data['selected_district'] != null) {
+          _selectedDistrict = data['selected_district'];
+        }
+        // You could also restore other things here if needed
+      });
+    }
+  }
   // ── Search ─────────────────────────────────────────────────
 
 List<Map<String, dynamic>> _filterStores({required String query, String? district}) {
@@ -119,28 +168,33 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
   void _selectSuggestion(Map<String, dynamic> store) {
     _searchController.text = store['name'] ?? '';
     _searchFocusNode.unfocus();
-    setState(() { _suggestions = []; _searchResults = [store]; });
+    setState(() { _suggestions = []; _previewStores = [store]; });
   }
 
   void _selectDistrict(String district) {
     setState(() { _selectedDistrict = district; _districtDropdownOpen = false; });
+    //Save to Cloud
+    _supabaseService.updateUserDetails(district: district);
   }
 
   // ── Navigation ─────────────────────────────────────────────
 
   void _navigateToStock(Map<String, dynamic> store) {
-// 🛑 DEBUG CHECK: Ensure ID exists
+// DEBUG CHECK: Ensure ID exists
     final id = store['id'];
     if (id == null) {
       print("Error: Store ID is null for ${store['name']}");
       return; 
     }
+    // Save Last Visited Store ID
+    // Convert to String because your DB column is 'text'
+    _supabaseService.updateUserDetails(lastStoreId: id.toString());
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StockPage(
-          // 🟢 FIXED: We now pass the ID
+          // We now pass the ID
           storeId: id, 
           supplyCOName: store['name'] ?? 'SupplyCo',
         ),
@@ -178,44 +232,88 @@ void _navigateToLastVisited() {
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────
+// ── Build ──────────────────────────────────────────────────
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _searchFocusNode.unfocus();
-        if (_districtDropdownOpen) setState(() => _districtDropdownOpen = false);
+Widget build(BuildContext context) {
+    // 🟢 WRAP WITH PopScope
+    return PopScope(
+      // 1. If we are viewing results (_searchResults != null), BLOCK the back button (canPop = false).
+      // 2. If we are on the main page, ALLOW the back button to close the app (canPop = true).
+      canPop: _searchResults == null,
+
+      onPopInvoked: (didPop) {
+        // If the system already closed the app, do nothing.
+        if (didPop) return;
+
+        // 🟢 LOGIC: If we blocked the back button, it means we want to go back to Search.
+        setState(() {
+          _searchResults = null;
+          // Optional: Clear the search text if you want
+          // _searchController.clear();
+        });
       },
-      child: Scaffold(
-        backgroundColor: _lightBg,
-        appBar: _buildAppBar(),
-        body: _searchResults != null
-            ? _ResultsPage(
-                results: _searchResults!,
-                district: _selectedDistrict,
-                onBack: () => setState(() => _searchResults = null),
-                onViewStock: _navigateToStock,
-                green: _green,
-              )
-            : _buildSearchPage(),
+
+      // Your EXISTING code stays exactly the same inside 'child'
+      child: GestureDetector(
+        onTap: () {
+          _searchFocusNode.unfocus();
+          if (_districtDropdownOpen) setState(() => _districtDropdownOpen = false);
+        },
+        child: Scaffold(
+          backgroundColor: _lightBg,
+          appBar: _buildAppBar(),
+          body: _searchResults != null
+              ? _ResultsPage(
+                  results: _searchResults!,
+                  district: _selectedDistrict,
+                  onBack: () => setState(() => _searchResults = null),
+                  onViewStock: _navigateToStock,
+                  green: _green,
+                )
+              : _buildSearchPage(),
+        ),
       ),
     );
   }
 
   AppBar _buildAppBar() {
+    // Check if we are currently viewing search results
+    final bool isShowingResults = _searchResults != null;
+
     return AppBar(
       backgroundColor: _green,
       foregroundColor: Colors.white,
       elevation: 0,
-      leading: const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: CircleAvatar(
-          backgroundColor: Colors.white24,
-          child: Icon(Icons.person, color: Colors.white, size: 20),
-        ),
+      
+      // 🟢 LOGIC: Show Back Arrow if showing results, otherwise show Profile Icon
+      leading: isShowingResults
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Back to Search',
+              onPressed: () {
+                setState(() {
+                  // This clears the results, forcing the body to render _buildSearchPage()
+                  _searchResults = null; 
+                  // Optional: Uncomment next line if you want to clear the typed text too
+                  // _searchController.clear(); 
+                });
+              },
+            )
+          : const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+            ),
+
+      // 🟢 LOGIC: Change title based on context
+      title: Text(
+        isShowingResults ? 'Search Results' : 'Guest',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
-      title: const Text('Guest', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      
       actions: [
         IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
         Padding(
@@ -278,19 +376,23 @@ void _navigateToLastVisited() {
               ),
             ),
             const SizedBox(height: 40),
-            Center(
-              child: Column(
-                children: [
-                  _SearchIllustration(green: _green),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Please enter an outlet name or shop code or place\nto search for supplyco outlets',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                ],
+            // 🟢 LOGIC: Show Preview Card if selected, else show Illustration
+            if (_previewStores.isNotEmpty) 
+              _buildPreviewSection()
+            else
+              Center(
+                child: Column(
+                  children: [
+                    _SearchIllustration(green: _green),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Please enter an outlet name or shop code or place\nto search for supplyco outlets',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -346,6 +448,86 @@ void _navigateToLastVisited() {
                     )).toList(),
                   ),
           ),
+      ],
+    );
+  }
+  Widget _buildPreviewSection() {
+    final store = _previewStores.first;
+    final name = store['name'] ?? 'Unknown';
+    final place = store['place'] ?? store['district'] ?? '';
+    final distance = store['distance_km']; // might be null
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Selected Outlet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black54)),
+        const SizedBox(height: 10),
+        
+        // The Store Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _green.withOpacity(0.3)),
+            boxShadow: [BoxShadow(color: _green.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: _green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.store, color: _green, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        if (place.isNotEmpty)
+                           Text(place, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              
+              // Action Buttons Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   if (distance != null)
+                     Text('📍 $distance km away', style: const TextStyle(color: Colors.grey)),
+                   if (distance == null)
+                     const Text('📍 Location info', style: const TextStyle(color: Colors.grey)),
+
+                   // 🟢 "View More" Button -> Goes to Sort/Results Page
+                   TextButton(
+                     onPressed: () {
+                       setState(() {
+                         // This triggers the page swap to _ResultsPage
+                         _searchResults = _previewStores; 
+                       });
+                     }, 
+                     child: Row(
+                       children: [
+                         Text('View More', style: TextStyle(color: _green, fontWeight: FontWeight.bold)),
+                         const SizedBox(width: 4),
+                         Icon(Icons.arrow_forward, size: 16, color: _green),
+                       ],
+                     )
+                   )
+                ],
+              )
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -421,7 +603,7 @@ class _LastVisitedCard extends StatelessWidget {
     final timeAgo = lastUpdated.isNotEmpty ? StorageService.getTimeAgo(lastUpdated) : 'Unknown';
     final name = store['name'] ?? 'Unknown Store';
     final district = store['district'] ?? '';
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -493,6 +675,7 @@ class _LastVisitedCard extends StatelessWidget {
       ],
     );
   }
+  
 }
 
 // ─────────────────────────────────────────────
