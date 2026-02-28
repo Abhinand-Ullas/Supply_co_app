@@ -289,34 +289,59 @@ if (_searchQuery.isNotEmpty && filteredStock.isEmpty) {
 
 
     return GridView.builder(
-  padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 27, vertical: 10),
+  
   itemCount: filteredStock.length,
   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: 2, // 👈 2 items per row
-    crossAxisSpacing: 20,
-    mainAxisSpacing: 15,
-    childAspectRatio: 9 / 2, // controls height
+    crossAxisSpacing: 10,
+    mainAxisSpacing: 16,
+    childAspectRatio: 1.5, // controls height
   ),
   itemBuilder: (context, index) {
     final item = filteredStock[index];
 
     return Card(
-      color: const Color.fromARGB(255, 231, 243, 233),
+      color: const Color.fromARGB(255, 254, 252, 252),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(
+    color: Colors.black,
+    width: .35,
+  ),
       ),
+
+
       child: Padding(
-        padding: const EdgeInsets.all(12),
+  padding: const EdgeInsets.all(12),
+  child: Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+
+      // 🖼 IMAGE (LEFT)
+      SizedBox(
+        height: 60,
+        width: 60,
+        child: Image.network(
+          item['image_url'] ?? '',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.shopping_basket_outlined,
+              size: 40,
+              color: Colors.grey,
+            );
+          },
+        ),
+      ),
+
+      const SizedBox(width: 12),
+
+      // 📝 TEXT + STATUS (RIGHT)
+      Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-
-            // Icon
-            CircleAvatar(
-              backgroundColor: _green.withOpacity(0.1),
-              child: const Icon(Icons.shopping_bag, color: _green),
-            ),
 
             // Item Name
             Text(
@@ -326,38 +351,74 @@ if (_searchQuery.isNotEmpty && filteredStock.isEmpty) {
               ),
             ),
 
+            const SizedBox(height: 4),
+
             // Quantity & Price
-            Text(
-              "${item['quantity']} ${item['unit'] ?? ''} • ₹${item['price'] ?? '--'}",
-              style: const TextStyle(fontSize: 12),
-            ),
+           RichText(
+  text: TextSpan(
+    style: const TextStyle(
+      fontSize: 12,
+      color: Colors.black87,
+    ),
+    children: [
+      TextSpan(
+        text: "${item['quantity']} ${item['unit'] ?? ''} • ",
+      ),
+      TextSpan(
+        text: "₹${item['price'] ?? '--'}",
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color.fromARGB(255, 15, 142, 24),
+        ),
+      ),
+    ],
+  ),
+),
+
+            
+        
+
+            const Spacer(),
+
+
 
             // Status
             Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (item['status'] == 'Available')
-                      ? const Color.fromARGB(255, 217, 248, 219)
-                      : const Color.fromARGB(255, 255, 225, 230),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  item['status'] ?? 'Available',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: (item['status'] == 'Available')
-                        ? Colors.green.shade800
-                        : Colors.red.shade800,
-                  ),
-                ),
+              alignment: Alignment.bottomRight,
+              child: Builder(
+                builder: (context) {
+                  final quantity = item['quantity'] ?? 0;
+                  final isAvailable = quantity > 0;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isAvailable
+                          ? const Color.fromARGB(255, 217, 248, 219)
+                          : const Color.fromARGB(255, 255, 225, 230),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isAvailable ? 'Available' : 'Not Available',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isAvailable
+                            ? Colors.green.shade800
+                            : Colors.red.shade800,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
+    ],
+  ),
+),
     );
   },
 );
