@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/sagar/Downloads/code_playground/projects/MiniProject/Supply_co_app/linux"
+    "cmake.sourceDirectory": "C:/Users/sagar/Downloads/code_playground/projects/MiniProject/Supply_co_app/linux",
+    "deno.enable": true
 }

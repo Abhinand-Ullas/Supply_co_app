@@ -110,18 +110,66 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+// Inside _HomePageState in HomePage.dart
+
   Future<void> _loadUserPreferences() async {
+    // 1. Fetch Profile from Supabase
     final data = await _supabaseService.fetchUserDetails();
     
-    // If we found data and the widget is still on screen...
-    if (data != null && mounted) {
-      setState(() {
-        // 1. Restore District
-        if (data['selected_district'] != null) {
-          _selectedDistrict = data['selected_district'];
+    // If no data or widget unmounted, stop.
+    if (data == null || !mounted) return;
+
+    setState(() {
+      // 2. Restore District
+      if (data['selected_district'] != null) {
+        _selectedDistrict = data['selected_district'];
+      }
+    });
+
+    // 3. Restore Last Visited Store (The New Logic)
+    final lastStoreId = data['last_selected_supplyco']; 
+
+    if (lastStoreId != null) {
+      try {
+        // A. We need the store details (Name, Place, etc.)
+        // If _allStores isn't loaded yet, we must fetch them now to find the specific store info.
+        if (_allStores.isEmpty) {
+          final stores = await _supabaseService.fetchStores();
+          _applyStores(stores); // Update the main list while we are at it
         }
-        // You could also restore other things here if needed
-      });
+
+        // B. Find the specific store object matching the ID
+        final storeInfo = _allStores.firstWhere(
+          (s) => s['id'].toString() == lastStoreId.toString(),
+          orElse: () => {},
+        );
+
+        // C. If store exists, Fetch LIVE Stock from Supabase
+        if (storeInfo.isNotEmpty) {
+           // Note: ensure ID is parsed to int for your fetchStock function
+           final int idAsInt = int.parse(lastStoreId.toString());
+           final stockData = await _supabaseService.fetchStock(idAsInt);
+
+           // D. Re-create the Snapshot (Store + Stock + Time)
+           final newSnapshot = {
+             'store_info': storeInfo,
+             'stock_data': stockData,
+             'last_updated': DateTime.now().toIso8601String(),
+           };
+
+           // E. Save to Local Storage (so it works offline next time)
+           await StorageService.saveStoreSnapshot(storeInfo, stockData);
+
+           // F. Update UI
+           if (mounted) {
+             setState(() {
+               _lastSnapshot = newSnapshot;
+             });
+           }
+        }
+      } catch (e) {
+        print("Error restoring last visited store: $e");
+      }
     }
   }
   // ── Search ─────────────────────────────────────────────────

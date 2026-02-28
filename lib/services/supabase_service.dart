@@ -8,8 +8,6 @@ class SupabaseService {
     try {
       final response = await _supabase
           .from('stores')
-          // 🟢 FIXED: Only asking for columns that exist in your DB Schema
-          // Removed: 'place', 'phone_contact'
           .select('id, name, district, address, govt_store_id') 
           .order('name', ascending: true);
       

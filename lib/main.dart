@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/core_pages/homepage.dart';
+import 'package:supply_co/intro_pages/auth_wrapper.dart';
 import 'package:supply_co/intro_pages/splashscreen.dart';
 import 'package:supply_co/services/local_storage_service.dart';
 import 'package:supply_co/services/notification_service.dart'; // Import the service
@@ -76,7 +77,6 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4D3E)),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
-    );
+      home: const AuthWrapper(),    );
   }
 }
