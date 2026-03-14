@@ -77,6 +77,6 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4D3E)),
         useMaterial3: true,
       ),
-      home: const AuthWrapper(),    );
+      home: const SplashScreen(),    );
   }
 }

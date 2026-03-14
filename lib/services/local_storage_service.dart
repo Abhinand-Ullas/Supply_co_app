@@ -6,11 +6,19 @@ class StorageService {
 
   static const _keySnapshot = 'last_visited_snapshot';
   static const _keyAllStores = 'all_stores_cache';
+  static const _keyOnboarding = 'seen_onboarding';
 
   // Call once in main.dart before runApp()
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
+
+  // ── Onboarding ─────────────────────────────────────────────
+
+  static bool hasSeenOnboarding() => _prefs.getBool(_keyOnboarding) ?? false;
+
+  static Future<void> markOnboardingSeen() =>
+      _prefs.setBool(_keyOnboarding, true);
 
   // ── Store List Cache ───────────────────────────────────────
 

@@ -5,6 +5,7 @@ import 'package:supply_co/services/notification_service.dart';
 import 'package:supply_co/services/supabase_service.dart';
 import 'package:supply_co/services/local_storage_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:supply_co/other_pages/profile_and_settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,7 +15,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const _green = Color(0xFF1B4D3E);
-  static const _lightBg = Color(0xFFF5F5F5);
+  static const _orange = Color(0xFFE87830);
+  static const _lightBg = Color(0xFFFDF5EC);
 
   final _supabaseService = SupabaseService();
   final _searchController = TextEditingController();
@@ -30,16 +32,18 @@ class _HomePageState extends State<HomePage> {
   //NEW: Holds the shop selected from dropdown to show in the "down area"
   List<Map<String, dynamic>> _previewStores = [];
 
+  // ── User Profile ───────────────────────────────────────────
+  String? _username; // Stores the user's name to display in AppBar
+
   // ── Last Visited ───────────────────────────────────────────
-  Map<String, dynamic>? _lastSnapshot; // { store_info, stock_data, last_updated }
+  Map<String, dynamic>?
+  _lastSnapshot; // { store_info, stock_data, last_updated }
 
   @override
   void initState() {
     super.initState();
     // Setup FCM for push notifications
     NotificationService().initNotifications();
-
-
 
     _lastSnapshot = StorageService.getStoreSnapshot(); // sync, instant
     _loadStoresAndDistricts();
@@ -72,6 +76,7 @@ class _HomePageState extends State<HomePage> {
       // Offline — cached data is already showing
     }
   }
+
   void setupFcm() async {
     // Ensure Firebase is initialized first
     if (Firebase.apps.isEmpty) {
@@ -110,24 +115,30 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-// Inside _HomePageState in HomePage.dart
+  // Inside _HomePageState in HomePage.dart
 
   Future<void> _loadUserPreferences() async {
     // 1. Fetch Profile from Supabase
     final data = await _supabaseService.fetchUserDetails();
-    
+
     // If no data or widget unmounted, stop.
     if (data == null || !mounted) return;
 
     setState(() {
-      // 2. Restore District
+      // 2. Set Username (for AppBar display)
+      // If user has a name, display it; otherwise, it will show "Guest"
+      if (data['name'] != null && data['name'].toString().isNotEmpty) {
+        _username = data['name'];
+      }
+
+      // 3. Restore District
       if (data['selected_district'] != null) {
         _selectedDistrict = data['selected_district'];
       }
     });
 
     // 3. Restore Last Visited Store (The New Logic)
-    final lastStoreId = data['last_selected_supplyco']; 
+    final lastStoreId = data['last_selected_supplyco'];
 
     if (lastStoreId != null) {
       try {
@@ -146,26 +157,26 @@ class _HomePageState extends State<HomePage> {
 
         // C. If store exists, Fetch LIVE Stock from Supabase
         if (storeInfo.isNotEmpty) {
-           // Note: ensure ID is parsed to int for your fetchStock function
-           final int idAsInt = int.parse(lastStoreId.toString());
-           final stockData = await _supabaseService.fetchStock(idAsInt);
+          // Note: ensure ID is parsed to int for your fetchStock function
+          final int idAsInt = int.parse(lastStoreId.toString());
+          final stockData = await _supabaseService.fetchStock(idAsInt);
 
-           // D. Re-create the Snapshot (Store + Stock + Time)
-           final newSnapshot = {
-             'store_info': storeInfo,
-             'stock_data': stockData,
-             'last_updated': DateTime.now().toIso8601String(),
-           };
+          // D. Re-create the Snapshot (Store + Stock + Time)
+          final newSnapshot = {
+            'store_info': storeInfo,
+            'stock_data': stockData,
+            'last_updated': DateTime.now().toIso8601String(),
+          };
 
-           // E. Save to Local Storage (so it works offline next time)
-           await StorageService.saveStoreSnapshot(storeInfo, stockData);
+          // E. Save to Local Storage (so it works offline next time)
+          await StorageService.saveStoreSnapshot(storeInfo, stockData);
 
-           // F. Update UI
-           if (mounted) {
-             setState(() {
-               _lastSnapshot = newSnapshot;
-             });
-           }
+          // F. Update UI
+          if (mounted) {
+            setState(() {
+              _lastSnapshot = newSnapshot;
+            });
+          }
         }
       } catch (e) {
         print("Error restoring last visited store: $e");
@@ -174,9 +185,12 @@ class _HomePageState extends State<HomePage> {
   }
   // ── Search ─────────────────────────────────────────────────
 
-List<Map<String, dynamic>> _filterStores({required String query, String? district}) {
+  List<Map<String, dynamic>> _filterStores({
+    required String query,
+    String? district,
+  }) {
     final q = query.trim().toLowerCase();
-    
+
     return _allStores.where((s) {
       // 1. Filter by District (if selected)
       final storeDistrict = s['district']?.toString();
@@ -186,9 +200,10 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
       // Use 'govt_store_id' instead of 'code' to match your Supabase query
       final name = s['name']?.toString().toLowerCase() ?? '';
       final place = s['place']?.toString().toLowerCase() ?? '';
-      final code = s['govt_store_id']?.toString().toLowerCase() ?? ''; 
+      final code = s['govt_store_id']?.toString().toLowerCase() ?? '';
 
-      final matchQuery = q.isEmpty ||
+      final matchQuery =
+          q.isEmpty ||
           name.contains(q) ||
           place.contains(q) ||
           code.contains(q); // Now searching against the correct ID column
@@ -196,12 +211,16 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
       return matchDistrict && matchQuery;
     }).toList();
   }
+
   void _onSearchChanged() {
     final q = _searchController.text;
     setState(() {
       _suggestions = q.isEmpty
           ? []
-          : _filterStores(query: q, district: _selectedDistrict).take(5).toList();
+          : _filterStores(
+              query: q,
+              district: _selectedDistrict,
+            ).take(5).toList();
     });
   }
 
@@ -209,18 +228,27 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
     _searchFocusNode.unfocus();
     setState(() {
       _suggestions = [];
-      _searchResults = _filterStores(query: _searchController.text, district: _selectedDistrict);
+      _searchResults = _filterStores(
+        query: _searchController.text,
+        district: _selectedDistrict,
+      );
     });
   }
 
   void _selectSuggestion(Map<String, dynamic> store) {
     _searchController.text = store['name'] ?? '';
     _searchFocusNode.unfocus();
-    setState(() { _suggestions = []; _previewStores = [store]; });
+    setState(() {
+      _suggestions = [];
+      _previewStores = [store];
+    });
   }
 
   void _selectDistrict(String district) {
-    setState(() { _selectedDistrict = district; _districtDropdownOpen = false; });
+    setState(() {
+      _selectedDistrict = district;
+      _districtDropdownOpen = false;
+    });
     //Save to Cloud
     _supabaseService.updateUserDetails(district: district);
   }
@@ -228,11 +256,11 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
   // ── Navigation ─────────────────────────────────────────────
 
   void _navigateToStock(Map<String, dynamic> store) {
-// DEBUG CHECK: Ensure ID exists
+    // DEBUG CHECK: Ensure ID exists
     final id = store['id'];
     if (id == null) {
       print("Error: Store ID is null for ${store['name']}");
-      return; 
+      return;
     }
     // Save Last Visited Store ID
     // Convert to String because your DB column is 'text'
@@ -243,7 +271,7 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
       MaterialPageRoute(
         builder: (_) => StockPage(
           // We now pass the ID
-          storeId: id, 
+          storeId: id,
           supplyCOName: store['name'] ?? 'SupplyCo',
         ),
       ),
@@ -251,27 +279,27 @@ List<Map<String, dynamic>> _filterStores({required String query, String? distric
   }
 
   /// Opens StockPage with cached stock pre-loaded as fallback.
-void _navigateToLastVisited() {
+  void _navigateToLastVisited() {
     // 1. Safety Check: Do we have a snapshot?
     if (_lastSnapshot == null) return;
-    
+
     final storeInfo = Map<String, dynamic>.from(_lastSnapshot!['store_info']);
-    
+
     // 2. Extract the STOCK list from the snapshot
     // If it's null, we pass an empty list (which triggers the "No Stock" message)
-    final List<Map<String, dynamic>> cachedStockList = 
-        _lastSnapshot!['stock_data'] != null 
-            ? List<Map<String, dynamic>>.from(_lastSnapshot!['stock_data']) 
-            : [];
+    final List<Map<String, dynamic>> cachedStockList =
+        _lastSnapshot!['stock_data'] != null
+        ? List<Map<String, dynamic>>.from(_lastSnapshot!['stock_data'])
+        : [];
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StockPage(
           // 🟢 Pass Store Details
-          storeId: storeInfo['id'] ?? 0, 
+          storeId: storeInfo['id'] ?? 0,
           supplyCOName: storeInfo['name'] ?? 'SupplyCo',
-          
+
           // 🟢 CRITICAL FIX: Pass the actual offline data here!
           cachedStock: cachedStockList,
           cachedAt: _lastSnapshot!['last_updated'],
@@ -280,10 +308,10 @@ void _navigateToLastVisited() {
     );
   }
 
-// ── Build ──────────────────────────────────────────────────
+  // ── Build ──────────────────────────────────────────────────
 
   @override
-Widget build(BuildContext context) {
+  Widget build(BuildContext context) {
     // 🟢 WRAP WITH PopScope
     return PopScope(
       // 1. If we are viewing results (_searchResults != null), BLOCK the back button (canPop = false).
@@ -306,7 +334,8 @@ Widget build(BuildContext context) {
       child: GestureDetector(
         onTap: () {
           _searchFocusNode.unfocus();
-          if (_districtDropdownOpen) setState(() => _districtDropdownOpen = false);
+          if (_districtDropdownOpen)
+            setState(() => _districtDropdownOpen = false);
         },
         child: Scaffold(
           backgroundColor: _lightBg,
@@ -333,7 +362,7 @@ Widget build(BuildContext context) {
       backgroundColor: _green,
       foregroundColor: Colors.white,
       elevation: 0,
-      
+
       // 🟢 LOGIC: Show Back Arrow if showing results, otherwise show Profile Icon
       leading: isShowingResults
           ? IconButton(
@@ -342,31 +371,51 @@ Widget build(BuildContext context) {
               onPressed: () {
                 setState(() {
                   // This clears the results, forcing the body to render _buildSearchPage()
-                  _searchResults = null; 
+                  _searchResults = null;
                   // Optional: Uncomment next line if you want to clear the typed text too
-                  // _searchController.clear(); 
+                  // _searchController.clear();
                 });
               },
             )
-          : const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, color: Colors.white, size: 20),
+          : Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileSettingsPage(),
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.white24,
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ),
 
       // 🟢 LOGIC: Change title based on context
       title: Text(
-        isShowingResults ? 'Search Results' : 'Guest',
+        isShowingResults ? 'Search Results' : (_username ?? 'Guest'),
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
-      
+
       actions: [
-        IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {},
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: IconButton(icon: const Icon(Icons.chat, color: Colors.greenAccent), onPressed: () {}),
+          child: IconButton(
+            icon: const Icon(Icons.chat, color: Colors.white),
+            onPressed: () {},
+          ),
         ),
       ],
     );
@@ -379,8 +428,10 @@ Widget build(BuildContext context) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Search SupplyCo Outlets',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text(
+              'Search SupplyCo Outlets',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
 
             // ── Last Visited Card ──────────────────────────────
@@ -404,11 +455,16 @@ Widget build(BuildContext context) {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _green,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _performSearch,
-                child: const Text('Search', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'Search',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -418,14 +474,20 @@ Widget build(BuildContext context) {
                 style: const TextStyle(fontSize: 13, color: Colors.black54),
                 children: [
                   const TextSpan(text: "Tap "),
-                  const TextSpan(text: "'Search'", style: TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(text: " to find the government outlets in ${_selectedDistrict ?? 'your district'} that match your query."),
+                  const TextSpan(
+                    text: "'Search'",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text:
+                        " to find the government outlets in ${_selectedDistrict ?? 'your district'} that match your query.",
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
             // 🟢 LOGIC: Show Preview Card if selected, else show Illustration
-            if (_previewStores.isNotEmpty) 
+            if (_previewStores.isNotEmpty)
               _buildPreviewSection()
             else
               Center(
@@ -451,7 +513,8 @@ Widget build(BuildContext context) {
     return Column(
       children: [
         GestureDetector(
-          onTap: () => setState(() => _districtDropdownOpen = !_districtDropdownOpen),
+          onTap: () =>
+              setState(() => _districtDropdownOpen = !_districtDropdownOpen),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
@@ -466,10 +529,20 @@ Widget build(BuildContext context) {
                 Expanded(
                   child: Text(
                     _selectedDistrict ?? 'Select District',
-                    style: TextStyle(fontSize: 15, color: _selectedDistrict != null ? Colors.black87 : Colors.black54),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: _selectedDistrict != null
+                          ? Colors.black87
+                          : Colors.black54,
+                    ),
                   ),
                 ),
-                Icon(_districtDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.black54),
+                Icon(
+                  _districtDropdownOpen
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: Colors.black54,
+                ),
               ],
             ),
           ),
@@ -478,27 +551,56 @@ Widget build(BuildContext context) {
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
               border: Border.all(color: Colors.grey.shade300),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
             child: _loadingStores
-                ? const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()))
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 : Column(
-                    children: _districts.map((d) => InkWell(
-                      onTap: () => _selectDistrict(d),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
-                        child: Text(d, style: const TextStyle(fontSize: 15)),
-                      ),
-                    )).toList(),
+                    children: _districts
+                        .map(
+                          (d) => InkWell(
+                            onTap: () => _selectDistrict(d),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade200,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                d,
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
           ),
       ],
     );
   }
+
   Widget _buildPreviewSection() {
     final store = _previewStores.first;
     final name = store['name'] ?? 'Unknown';
@@ -508,9 +610,16 @@ Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Selected Outlet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black54)),
+        const Text(
+          "Selected Outlet",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black54,
+          ),
+        ),
         const SizedBox(height: 10),
-        
+
         // The Store Card
         Container(
           padding: const EdgeInsets.all(16),
@@ -518,7 +627,13 @@ Widget build(BuildContext context) {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _green.withOpacity(0.3)),
-            boxShadow: [BoxShadow(color: _green.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+            boxShadow: [
+              BoxShadow(
+                color: _green.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -526,7 +641,10 @@ Widget build(BuildContext context) {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: _green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Icon(Icons.store, color: _green, size: 24),
                   ),
                   const SizedBox(width: 14),
@@ -534,9 +652,21 @@ Widget build(BuildContext context) {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         if (place.isNotEmpty)
-                           Text(place, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                          Text(
+                            place,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -545,34 +675,46 @@ Widget build(BuildContext context) {
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
-              
+
               // Action Buttons Row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   if (distance != null)
-                     Text('📍 $distance km away', style: const TextStyle(color: Colors.grey)),
-                   if (distance == null)
-                     const Text('📍 Location info', style: const TextStyle(color: Colors.grey)),
+                  if (distance != null)
+                    Text(
+                      '📍 $distance km away',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  if (distance == null)
+                    const Text(
+                      '📍 Location info',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
 
-                   // 🟢 "View More" Button -> Goes to Sort/Results Page
-                   TextButton(
-                     onPressed: () {
-                       setState(() {
-                         // This triggers the page swap to _ResultsPage
-                         _searchResults = _previewStores; 
-                       });
-                     }, 
-                     child: Row(
-                       children: [
-                         Text('View More', style: TextStyle(color: _green, fontWeight: FontWeight.bold)),
-                         const SizedBox(width: 4),
-                         Icon(Icons.arrow_forward, size: 16, color: _green),
-                       ],
-                     )
-                   )
+                  // 🟢 "View More" Button -> Goes to Sort/Results Page
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        // This triggers the page swap to _ResultsPage
+                        _searchResults = _previewStores;
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          'View More',
+                          style: TextStyle(
+                            color: _green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, size: 16, color: _green),
+                      ],
+                    ),
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -597,7 +739,11 @@ Widget build(BuildContext context) {
             decoration: InputDecoration(
               hintText: 'Search by name or place or code',
               hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
-              prefixIcon: const Icon(Icons.search, color: Colors.black45, size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Colors.black45,
+                size: 20,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -607,20 +753,46 @@ Widget build(BuildContext context) {
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12), bottomRight: Radius.circular(12)),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
               border: Border.all(color: Colors.grey.shade300),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
             ),
             child: Column(
-              children: _suggestions.map((s) => InkWell(
-                onTap: () => _selectSuggestion(s),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
-                  child: Text(_storeSuggestionLabel(s), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ),
-              )).toList(),
+              children: _suggestions
+                  .map(
+                    (s) => InkWell(
+                      onTap: () => _selectSuggestion(s),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey.shade200),
+                          ),
+                        ),
+                        child: Text(
+                          _storeSuggestionLabel(s),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
       ],
@@ -642,16 +814,22 @@ class _LastVisitedCard extends StatelessWidget {
   final VoidCallback onTap;
   final Color green;
 
-  const _LastVisitedCard({required this.snapshot, required this.onTap, required this.green});
+  const _LastVisitedCard({
+    required this.snapshot,
+    required this.onTap,
+    required this.green,
+  });
 
   @override
   Widget build(BuildContext context) {
     final store = Map<String, dynamic>.from(snapshot['store_info'] ?? {});
     final lastUpdated = snapshot['last_updated'] as String? ?? '';
-    final timeAgo = lastUpdated.isNotEmpty ? StorageService.getTimeAgo(lastUpdated) : 'Unknown';
+    final timeAgo = lastUpdated.isNotEmpty
+        ? StorageService.getTimeAgo(lastUpdated)
+        : 'Unknown';
     final name = store['name'] ?? 'Unknown Store';
     final district = store['district'] ?? '';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -659,8 +837,14 @@ class _LastVisitedCard extends StatelessWidget {
           children: [
             Icon(Icons.history, size: 15, color: Colors.grey.shade500),
             const SizedBox(width: 4),
-            Text('Last Visited',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+            Text(
+              'Last Visited',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -672,14 +856,23 @@ class _LastVisitedCard extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: green.withOpacity(0.25)),
-              boxShadow: [BoxShadow(color: green.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: green.withOpacity(0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
                   width: 42,
                   height: 42,
-                  decoration: BoxDecoration(color: green.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(
+                    color: green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Icon(Icons.store, color: green, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -687,22 +880,47 @@ class _LastVisitedCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 3),
                       Row(
                         children: [
                           if (district.isNotEmpty) ...[
-                            Icon(Icons.location_on, size: 12, color: Colors.grey.shade500),
+                            Icon(
+                              Icons.location_on,
+                              size: 12,
+                              color: Colors.grey.shade500,
+                            ),
                             const SizedBox(width: 2),
-                            Text(district, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                            Text(
+                              district,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(Icons.access_time, size: 12, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(width: 2),
-                          Text(timeAgo, style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+                          Text(
+                            timeAgo,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -713,7 +931,14 @@ class _LastVisitedCard extends StatelessWidget {
                   children: [
                     Icon(Icons.arrow_forward_ios, size: 14, color: green),
                     const SizedBox(height: 2),
-                    Text('View Stock', style: TextStyle(fontSize: 11, color: green, fontWeight: FontWeight.w600)),
+                    Text(
+                      'View Stock',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -723,7 +948,6 @@ class _LastVisitedCard extends StatelessWidget {
       ],
     );
   }
-  
 }
 
 // ─────────────────────────────────────────────
@@ -736,7 +960,13 @@ class _ResultsPage extends StatefulWidget {
   final void Function(Map<String, dynamic>) onViewStock;
   final Color green;
 
-  const _ResultsPage({required this.results, required this.district, required this.onBack, required this.onViewStock, required this.green});
+  const _ResultsPage({
+    required this.results,
+    required this.district,
+    required this.onBack,
+    required this.onViewStock,
+    required this.green,
+  });
 
   @override
   State<_ResultsPage> createState() => _ResultsPageState();
@@ -747,7 +977,8 @@ class _ResultsPageState extends State<_ResultsPage> {
   int _displayCount = _pageSize;
   bool _sortByDistance = true;
 
-  List<Map<String, dynamic>> get _displayed => widget.results.take(_displayCount).toList();
+  List<Map<String, dynamic>> get _displayed =>
+      widget.results.take(_displayCount).toList();
   bool get _hasMore => _displayCount < widget.results.length;
 
   @override
@@ -760,37 +991,73 @@ class _ResultsPageState extends State<_ResultsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('All SupplyCo Outlets', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                'All SupplyCo Outlets',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.shade200)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
                 child: Row(
                   children: [
                     Icon(Icons.location_on, color: widget.green, size: 18),
                     const SizedBox(width: 6),
-                    Text(widget.district != null ? '${widget.district} District' : 'All Districts',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text(
+                      widget.district != null
+                          ? '${widget.district} District'
+                          : 'All Districts',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Container(width: 1, height: 16, color: Colors.grey.shade300),
+                    Container(
+                      width: 1,
+                      height: 16,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(width: 8),
-                    Text('${widget.results.length} Outlets Found', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                    Text(
+                      '${widget.results.length} Outlets Found',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 6, bottom: 4),
-                child: Text('Sorted by Distance', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                child: Text(
+                  'Sorted by Distance',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
               ),
               OutlinedButton.icon(
-                onPressed: () => setState(() => _sortByDistance = !_sortByDistance),
+                onPressed: () =>
+                    setState(() => _sortByDistance = !_sortByDistance),
                 icon: const Icon(Icons.swap_vert, size: 16),
                 label: const Text('Sort >'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.black87,
                   side: BorderSide(color: Colors.grey.shade400),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   textStyle: const TextStyle(fontSize: 13),
                 ),
               ),
@@ -818,22 +1085,36 @@ class _ResultsPageState extends State<_ResultsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(place.toString().isNotEmpty ? '$name - $place' : name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                Text(
+                  place.toString().isNotEmpty ? '$name - $place' : name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     const Text('📍', style: TextStyle(fontSize: 13)),
                     const SizedBox(width: 4),
-                    Text(distance != null ? '$distance km away' : '2.0 km away',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text(
+                      distance != null ? '$distance km away' : '2.0 km away',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -844,7 +1125,9 @@ class _ResultsPageState extends State<_ResultsPage> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.black87,
               side: BorderSide(color: Colors.grey.shade400),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               textStyle: const TextStyle(fontSize: 13),
             ),
@@ -857,7 +1140,15 @@ class _ResultsPageState extends State<_ResultsPage> {
 
   Widget _buildFooter() {
     if (widget.results.isEmpty) {
-      return const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No outlets found.', style: TextStyle(color: Colors.black54))));
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            'No outlets found.',
+            style: TextStyle(color: Colors.black54),
+          ),
+        ),
+      );
     }
     if (_hasMore) {
       return Padding(
@@ -866,15 +1157,32 @@ class _ResultsPageState extends State<_ResultsPage> {
           onTap: () => setState(() => _displayCount += _pageSize),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
-            child: const Center(child: Text('View More Outlets', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87))),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Center(
+              child: Text(
+                'View More Outlets',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
           ),
         ),
       );
     }
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 16),
-      child: Center(child: Text('__ Loading More Outlets __', style: TextStyle(fontSize: 13, color: Colors.black38))),
+      child: Center(
+        child: Text(
+          '__ Loading More Outlets __',
+          style: TextStyle(fontSize: 13, color: Colors.black38),
+        ),
+      ),
     );
   }
 }
@@ -889,26 +1197,91 @@ class _SearchIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 200, width: 200,
+      height: 200,
+      width: 200,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(width: 170, height: 170, decoration: BoxDecoration(shape: BoxShape.circle, color: green.withOpacity(0.07))),
           Container(
-            width: 90, height: 140,
-            decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade400, width: 2)),
+            width: 170,
+            height: 170,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: green.withOpacity(0.07),
+            ),
+          ),
+          Container(
+            width: 90,
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade400, width: 2),
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), height: 8, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(4))),
-                Container(margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), height: 8, width: 50, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(4))),
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  height: 8,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Icon(Icons.location_on, color: green, size: 24),
               ],
             ),
           ),
-          Positioned(right: 10, bottom: 30, child: Container(width: 50, height: 50, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2))]), child: Icon(Icons.search, color: green, size: 26))),
-          Positioned(left: 8, top: 40, child: Container(width: 40, height: 30, decoration: BoxDecoration(color: green.withOpacity(0.15), borderRadius: BorderRadius.circular(8)), child: Icon(Icons.chat_bubble_outline, color: green, size: 18))),
+          Positioned(
+            right: 10,
+            bottom: 30,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.search, color: green, size: 26),
+            ),
+          ),
+          Positioned(
+            left: 8,
+            top: 40,
+            child: Container(
+              width: 40,
+              height: 30,
+              decoration: BoxDecoration(
+                color: green.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.chat_bubble_outline, color: green, size: 18),
+            ),
+          ),
         ],
       ),
     );
