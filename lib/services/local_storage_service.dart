@@ -7,6 +7,7 @@ class StorageService {
   static const _keySnapshot = 'last_visited_snapshot';
   static const _keyAllStores = 'all_stores_cache';
   static const _keyOnboarding = 'seen_onboarding';
+  static const _keyGuestMode = 'guest_mode';
 
   // Call once in main.dart before runApp()
   static Future<void> init() async {
@@ -19,6 +20,13 @@ class StorageService {
 
   static Future<void> markOnboardingSeen() =>
       _prefs.setBool(_keyOnboarding, true);
+
+  // ── Guest Mode ──────────────────────────────────────────────
+
+  static bool isGuestMode() => _prefs.getBool(_keyGuestMode) ?? false;
+
+  static Future<void> setGuestMode(bool value) =>
+      _prefs.setBool(_keyGuestMode, value);
 
   // ── Store List Cache ───────────────────────────────────────
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core_pages/homepage.dart';  
+import '../core_pages/homepage.dart';
 import '../intro_pages/auth_page.dart';
+import '../services/local_storage_service.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -12,7 +13,6 @@ class AuthWrapper extends StatelessWidget {
       // Listen to the auth state changes in real-time
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        
         // 1. Loading State
         if (snapshot.connectionState == ConnectionState.waiting) {
           // You can return your SplashScreen here if you want
@@ -25,9 +25,11 @@ class AuthWrapper extends StatelessWidget {
         final session = snapshot.data?.session;
 
         if (session != null) {
-          return const HomePage(); 
+          return const HomePage();
+        } else if (StorageService.isGuestMode()) {
+          return const HomePage();
         } else {
-          return const AuthPage(); 
+          return const AuthPage();
         }
       },
     );

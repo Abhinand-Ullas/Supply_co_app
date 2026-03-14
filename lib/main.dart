@@ -6,8 +6,7 @@ import 'package:supply_co/intro_pages/auth_wrapper.dart';
 import 'package:supply_co/intro_pages/splashscreen.dart';
 import 'package:supply_co/services/local_storage_service.dart';
 import 'package:supply_co/services/notification_service.dart'; // Import the service
-import 'package:firebase_core/firebase_core.dart'; 
-
+import 'package:firebase_core/firebase_core.dart';
 
 // global navigator key so auth listener can navigate
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -40,21 +39,18 @@ Future<void> main() async {
     NotificationService().initNotifications();
     print('main(): NotificationService init called');
 
-
-
     // Listen for auth state changes globally
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       print('auth state change: $event');
       if (event == AuthChangeEvent.signedIn) {
+        StorageService.setGuestMode(false);
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => HomePage()),
           (route) => false,
         );
       }
     });
-
-    
   } catch (e, st) {
     print('main(): initialization error: $e\n$st');
   }
@@ -77,6 +73,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4D3E)),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),    );
+      home: const SplashScreen(),
+    );
   }
 }

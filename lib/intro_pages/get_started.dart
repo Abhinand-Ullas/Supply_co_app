@@ -322,6 +322,7 @@ class _GetStartedState extends State<GetStarted>
                 child: ElevatedButton(
                   onPressed: () async {
                     await StorageService.markOnboardingSeen();
+                    await StorageService.setGuestMode(true);
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => HomePage()),
