@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/core_pages/homepage.dart';
 import 'package:supply_co/intro_pages/auth_wrapper.dart';
 import 'package:supply_co/intro_pages/splashscreen.dart';
 import 'package:supply_co/services/local_storage_service.dart';
-import 'package:supply_co/services/notification_service.dart'; // Import the service
+import 'package:supply_co/services/notification_service.dart';
+import 'package:supply_co/services/localization_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supply_co/generated_localizations/app_localizations.dart';
 
 // global navigator key so auth listener can navigate
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -77,15 +81,44 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print('MyApp.build fired');
-    return MaterialApp(
-      navigatorKey: navigatorKey, // pass key for global navigation
-      title: "Supplyco-project",
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1B4D3E)),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => LocalizationProvider(),
+      child: Consumer<LocalizationProvider>(
+        builder: (context, localizationProvider, _) {
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            title: "Supplyco-project",
+            debugShowCheckedModeBanner: false,
+
+            // Localization settings
+            locale: localizationProvider.currentLocale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'), // English
+              Locale('hi'), // Hindi
+              Locale('ml'), // Malayalam
+              Locale('gu'), // Gujarati
+              Locale('mr'), // Marathi
+              Locale('bn'), // Bengali
+              Locale('ta'), // Tamil
+              Locale('te'), // Telugu
+            ],
+
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF1B4D3E),
+              ),
+              useMaterial3: true,
+            ),
+            home: const SplashScreen(),
+          );
+        },
       ),
-      home: const SplashScreen(),
     );
   }
 }

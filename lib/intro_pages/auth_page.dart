@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/core_pages/homepage.dart';
 import 'package:supply_co/services/local_storage_service.dart';
+import 'package:supply_co/generated_localizations/app_localizations.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -69,9 +70,11 @@ class _AuthPageState extends State<AuthPage> {
         isOtpRequested = true;
         isLoading_otpfor_registration = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("OTP sent successfully!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.otpSentSuccessfully),
+        ),
+      );
     } on AuthException catch (e) {
       setState(() => isLoading_otpfor_registration = false);
       ScaffoldMessenger.of(
@@ -134,14 +137,18 @@ class _AuthPageState extends State<AuthPage> {
     final phone = mobileLoginController.text.trim();
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter mobile number")),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseEnterMobileMessage),
+        ),
       );
       return;
     }
     if (phone.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter a valid 10-digit mobile number"),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.pleaseEnterValidMobileNumber,
+          ),
         ),
       );
       return;
@@ -154,9 +161,11 @@ class _AuthPageState extends State<AuthPage> {
         isLoginOtpRequested = true;
         isLoading_otpfor_login = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("OTP sent successfully!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.otpSentSuccessfully),
+        ),
+      );
     } on AuthException catch (e) {
       setState(() => isLoading_otpfor_login = false);
       ScaffoldMessenger.of(
@@ -177,9 +186,11 @@ class _AuthPageState extends State<AuthPage> {
     final formattedPhone = '+91${mobileLoginController.text.trim()}';
     final otp = loginOtpController.text.trim();
     if (otp.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please enter OTP")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseEnterOTPMessage),
+        ),
+      );
       return;
     }
     setState(() => isLoading_login = true);
@@ -199,8 +210,10 @@ class _AuthPageState extends State<AuthPage> {
         if (profile == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Number not registered. Please register first."),
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context)!.numberNotRegistered,
+                ),
               ),
             );
             setState(() {
@@ -241,8 +254,8 @@ class _AuthPageState extends State<AuthPage> {
     // REGISTER TAB ONLY: Stop if name field is empty
     if (isRegisterTab && fullNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter your name before continuing"),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.pleaseEnterNameBefore),
         ),
       );
       return; // Don't proceed — user must fill name field first
@@ -303,8 +316,8 @@ class _AuthPageState extends State<AuthPage> {
               // LOGIN TAB: no account found → tell user to register first
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("No account found. Please register first."),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context)!.noAccountFound),
                   ),
                 );
                 setState(() => isRegisterTab = true); // Switch to register tab
@@ -336,9 +349,9 @@ class _AuthPageState extends State<AuthPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Register / Login",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.loginRegister,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w500,
@@ -375,7 +388,7 @@ class _AuthPageState extends State<AuthPage> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          "Register",
+                          AppLocalizations.of(context)!.register,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
@@ -406,7 +419,7 @@ class _AuthPageState extends State<AuthPage> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
-                          "Login",
+                          AppLocalizations.of(context)!.login,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
@@ -438,7 +451,7 @@ class _AuthPageState extends State<AuthPage> {
           TextField(
             controller: fullNameController,
             decoration: InputDecoration(
-              hintText: "Enter Full Name",
+              hintText: AppLocalizations.of(context)!.enterFullName,
               hintStyle: TextStyle(color: Colors.grey[500]),
               prefixIcon: Icon(Icons.person, color: Colors.grey[600]),
               filled: true,
@@ -461,7 +474,7 @@ class _AuthPageState extends State<AuthPage> {
           TextField(
             controller: mobileRegisterController,
             decoration: InputDecoration(
-              hintText: "Enter Mobile Number",
+              hintText: AppLocalizations.of(context)!.enterMobileNumber,
               hintStyle: TextStyle(color: Colors.grey[500]),
               prefixIcon: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -503,35 +516,45 @@ class _AuthPageState extends State<AuthPage> {
 
           if (!isOtpRequested)
             _authButton(
-              text: "Get OTP",
+              text: AppLocalizations.of(context)!.getOTP,
               isLoading: isLoading_otpfor_registration,
               onPressed: () {
                 if (fullNameController.text.trim().isEmpty &&
                     mobileRegisterController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please enter your name & number"),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.pleaseEnterNameAndNumber,
+                      ),
                     ),
                   );
                   return;
                 }
                 if (fullNameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter your name")),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.pleaseEnterNameMessage,
+                      ),
+                    ),
                   );
                   return;
                 }
                 if (mobileRegisterController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter mobile number")),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.pleaseEnterMobileMessage,
+                      ),
+                    ),
                   );
                   return;
                 }
                 if (mobileRegisterController.text.length != 10) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                        "Please enter a valid 10-digit mobile number",
+                        AppLocalizations.of(context)!.pleaseEnterValidMobileNumber,
                       ),
                     ),
                   );
@@ -546,7 +569,7 @@ class _AuthPageState extends State<AuthPage> {
             TextField(
               controller: otpController,
               decoration: InputDecoration(
-                hintText: "Enter OTP",
+                hintText: AppLocalizations.of(context)!.enterOTP,
                 hintStyle: TextStyle(color: Colors.grey[500]),
                 filled: true,
                 fillColor: Colors.grey[100],
@@ -571,7 +594,7 @@ class _AuthPageState extends State<AuthPage> {
               child: GestureDetector(
                 onTap: () => _sendOtp(mobileRegisterController.text.trim()),
                 child: Text(
-                  "Resend OTP",
+                  AppLocalizations.of(context)!.resendOTP,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
@@ -582,12 +605,16 @@ class _AuthPageState extends State<AuthPage> {
             ),
             const SizedBox(height: 20),
             _authButton(
-              text: "REGISTER",
+              text: AppLocalizations.of(context)!.registerButtonLabel,
               isLoading: isLoading_for_registration,
               onPressed: () {
                 if (otpController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter OTP")),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context)!.pleaseEnterOTPMessage,
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -600,7 +627,7 @@ class _AuthPageState extends State<AuthPage> {
           _orDivider(),
           const SizedBox(height: 20),
           _authButton(
-            text: "Continue with Google",
+            text: AppLocalizations.of(context)!.continueWithGoogle,
             isLoading: isLoading_google_signin,
             onPressed: _signInWithGoogle,
           ),
@@ -658,7 +685,7 @@ class _AuthPageState extends State<AuthPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
-            "Or",
+            AppLocalizations.of(context)!.or,
             style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
         ),
@@ -676,7 +703,7 @@ class _AuthPageState extends State<AuthPage> {
           TextField(
             controller: mobileLoginController,
             decoration: InputDecoration(
-              hintText: "Enter Mobile Number",
+              hintText: AppLocalizations.of(context)!.enterMobileNumber,
               hintStyle: TextStyle(color: Colors.grey[500]),
               prefixIcon: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -718,7 +745,7 @@ class _AuthPageState extends State<AuthPage> {
 
           if (!isLoginOtpRequested)
             _authButton(
-              text: "Get OTP",
+              text: AppLocalizations.of(context)!.getOTP,
               isLoading: isLoading_otpfor_login,
               onPressed: _sendLoginOtp,
             ),
@@ -727,7 +754,7 @@ class _AuthPageState extends State<AuthPage> {
             TextField(
               controller: loginOtpController,
               decoration: InputDecoration(
-                hintText: "Enter OTP",
+                hintText: AppLocalizations.of(context)!.enterOTP,
                 hintStyle: TextStyle(color: Colors.grey[500]),
                 filled: true,
                 fillColor: Colors.grey[100],
@@ -752,7 +779,7 @@ class _AuthPageState extends State<AuthPage> {
               child: GestureDetector(
                 onTap: () => _sendLoginOtp(),
                 child: Text(
-                  "Resend OTP",
+                  AppLocalizations.of(context)!.resendOTP,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
@@ -763,7 +790,7 @@ class _AuthPageState extends State<AuthPage> {
             ),
             const SizedBox(height: 20),
             _authButton(
-              text: "LOGIN",
+              text: AppLocalizations.of(context)!.loginButtonLabel,
               isLoading: isLoading_login,
               onPressed: _verifyOtpAndLogin,
             ),
@@ -773,7 +800,7 @@ class _AuthPageState extends State<AuthPage> {
           _orDivider(),
           const SizedBox(height: 20),
           _authButton(
-            text: "Continue with Google",
+            text: AppLocalizations.of(context)!.continueWithGoogle,
             isLoading: isLoading_google_signin,
             onPressed: _signInWithGoogle,
           ),

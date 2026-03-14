@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:supply_co/generated_localizations/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LanguageDialog
@@ -24,7 +24,6 @@ class LanguageDialog extends StatefulWidget {
 }
 
 class _LanguageDialogState extends State<LanguageDialog> {
-
   static const List<String> _languages = [
     'English',
     'Malayalam',
@@ -53,10 +52,9 @@ class _LanguageDialogState extends State<LanguageDialog> {
 
       // ── Title ──────────────────────────────────────────────────────────
       title: Center(
-        child: const Text(
-          
-          'Select Your Language',
-          style: TextStyle(
+        child: Text(
+          AppLocalizations.of(context)!.selectYourLanguage,
+          style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
@@ -71,7 +69,6 @@ class _LanguageDialogState extends State<LanguageDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min, // Shrink dialog to fit content
         children: [
-
           // Divider directly below the "Select Language" title.
           // Spans the full dialog width (no indent).
           const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
@@ -85,7 +82,6 @@ class _LanguageDialogState extends State<LanguageDialog> {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
                 // ── Language row ─────────────────────────────────────────
                 InkWell(
                   // Tap updates highlight immediately (live preview).
@@ -95,14 +91,20 @@ class _LanguageDialogState extends State<LanguageDialog> {
                   child: Container(
                     // Light green tint on the selected row
                     color: isSelected
-                        ?const Color.fromARGB(255, 93, 97, 94).withValues(alpha: 0.07)
+                        ? const Color.fromARGB(
+                            255,
+                            93,
+                            97,
+                            94,
+                          ).withValues(alpha: 0.07)
                         : Colors.transparent,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
-
                         // Custom radio circle matching the green theme.
                         // Flutter's built-in Radio widget doesn't support custom
                         // colors easily, so we draw our own circle.
@@ -143,7 +145,7 @@ class _LanguageDialogState extends State<LanguageDialog> {
                             fontWeight: isSelected
                                 ? FontWeight.w600
                                 : FontWeight.w400,
-                            color:  Colors.black87,
+                            color: Colors.black87,
                           ),
                         ),
                       ],
@@ -169,13 +171,12 @@ class _LanguageDialogState extends State<LanguageDialog> {
 
       // ── Action buttons ─────────────────────────────────────────────────
       actions: [
-
         // Cancel — closes dialog, returns null to caller (no change saved)
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(
+          child: Text(
+            AppLocalizations.of(context)!.cancel,
+            style: const TextStyle(
               color: Colors.black54,
               fontWeight: FontWeight.w500,
             ),
@@ -186,9 +187,9 @@ class _LanguageDialogState extends State<LanguageDialog> {
         // The caller receives this via .then((chosen) { ... })
         TextButton(
           onPressed: () => Navigator.pop(context, _selected),
-          child: const Text(
-            'Confirm',
-            style: TextStyle(
+          child: Text(
+            AppLocalizations.of(context)!.confirm,
+            style: const TextStyle(
               color: Color(0xFF1A5C2A),
               fontWeight: FontWeight.w600,
             ),

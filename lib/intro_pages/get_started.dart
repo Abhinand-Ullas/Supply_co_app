@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supply_co/core_pages/homepage.dart';
 import 'package:supply_co/intro_pages/auth_page.dart';
 import 'package:supply_co/services/local_storage_service.dart';
+import 'package:supply_co/services/localization_provider.dart';
 
 class GetStarted extends StatefulWidget {
   const GetStarted({super.key});
@@ -199,6 +201,13 @@ class _GetStartedState extends State<GetStarted>
                 ),
                 onTap: () async {
                   await StorageService.setPreferredLanguage('en');
+                  // Update LocalizationProvider to reflect language change instantly
+                  if (mounted) {
+                    Provider.of<LocalizationProvider>(
+                      context,
+                      listen: false,
+                    ).changeLanguage('en');
+                  }
                   setState(() {
                     _selectedLanguage = 'English';
                     _dropdownOpen = false;
@@ -223,6 +232,8 @@ class _GetStartedState extends State<GetStarted>
                 ),
                 onTap: () => setState(() => _dropdownOpen = !_dropdownOpen),
               ),
+
+              const SizedBox(height: 40),
 
               // ── Inline dropdown ───────────────────────────────────────────
               if (_dropdownOpen)
@@ -254,8 +265,17 @@ class _GetStartedState extends State<GetStarted>
                         children: [
                           InkWell(
                             onTap: () async {
-                              final code = StorageService.languageNameToCode(lang);
+                              final code = StorageService.languageNameToCode(
+                                lang,
+                              );
                               await StorageService.setPreferredLanguage(code);
+                              // Update LocalizationProvider to reflect language change instantly
+                              if (mounted) {
+                                Provider.of<LocalizationProvider>(
+                                  context,
+                                  listen: false,
+                                ).changeLanguage(code);
+                              }
                               setState(() {
                                 _selectedLanguage = lang;
                                 _dropdownOpen = false;
@@ -332,12 +352,22 @@ class _GetStartedState extends State<GetStarted>
                   onPressed: () async {
                     await StorageService.markOnboardingSeen();
                     await StorageService.setGuestMode(true);
-                    final code = StorageService.languageNameToCode(_selectedLanguage);
-                    await StorageService.setPreferredLanguage(code);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => HomePage()),
+                    final code = StorageService.languageNameToCode(
+                      _selectedLanguage,
                     );
+                    // Update LocalizationProvider to apply language change immediately
+                    if (mounted) {
+                      Provider.of<LocalizationProvider>(
+                        context,
+                        listen: false,
+                      ).changeLanguage(code);
+                    }
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomePage()),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _orange,
@@ -366,12 +396,22 @@ class _GetStartedState extends State<GetStarted>
                 child: ElevatedButton(
                   onPressed: () async {
                     await StorageService.markOnboardingSeen();
-                    final code = StorageService.languageNameToCode(_selectedLanguage);
-                    await StorageService.setPreferredLanguage(code);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AuthPage()),
+                    final code = StorageService.languageNameToCode(
+                      _selectedLanguage,
                     );
+                    // Update LocalizationProvider to apply language change immediately
+                    if (mounted) {
+                      Provider.of<LocalizationProvider>(
+                        context,
+                        listen: false,
+                      ).changeLanguage(code);
+                    }
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AuthPage()),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _lightOrange,

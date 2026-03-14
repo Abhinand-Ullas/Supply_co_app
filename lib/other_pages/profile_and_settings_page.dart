@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/intro_pages/auth_page.dart';
 import 'package:supply_co/other_pages/accessibility.dart';
@@ -7,6 +8,8 @@ import 'package:supply_co/other_pages/manage_alerts.dart';
 import 'package:supply_co/other_pages/privacy_policy.dart';
 import 'package:supply_co/other_pages/terms_conditions.dart';
 import 'package:supply_co/services/local_storage_service.dart';
+import 'package:supply_co/services/localization_provider.dart';
+import 'package:supply_co/generated_localizations/app_localizations.dart';
 
 // Import your existing pages.
 // Adjust the paths to match your actual project folder structure.
@@ -90,7 +93,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           _phone = data?['phone_number']?.toString();
 
           // Get language preference from DB, or fall back to local storage
-          final languageCode = data?['preferred_language'] as String? ??
+          final languageCode =
+              data?['preferred_language'] as String? ??
               StorageService.getPreferredLanguage();
           _selectedLanguage = StorageService.codeToLanguageName(languageCode);
           _isLoading = false;
@@ -149,9 +153,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           // Navigator.pop() goes back to whichever page called this one
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Profile & Settings',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.profileSettings,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -175,9 +179,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             const SizedBox(height: 28),
 
             // "Settings" section label
-            const Text(
-              'Settings',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.settings,
+              style: const TextStyle(
                 fontSize: 15,
                 color: Colors.black54,
                 fontWeight: FontWeight.w500,
@@ -191,7 +195,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.person_outline,
                 iconColor: const Color(0xFF5B8DEF),
-                label: 'Set Profile',
+                label: AppLocalizations.of(context)!.setProfile,
                 onTap: () {
                   // Navigate to AuthPage using push (NOT pushReplacement) so
                   // the back arrow on AuthPage returns here to Settings.
@@ -207,7 +211,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.notifications_none,
                 iconColor: const Color(0xFFF5A623),
-                label: 'Manage Alerts',
+                label: AppLocalizations.of(context)!.manageAlerts,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -224,7 +228,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.language,
                 iconColor: const Color(0xFF5B8DEF),
-                label: 'Language',
+                label: AppLocalizations.of(context)!.language,
                 onTap: () {
                   // Show the LanguageDialog (defined in language_dialog.dart).
                   // showDialog() displays it as an overlay above the current page.
@@ -242,6 +246,13 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                       // Save to local storage
                       final code = StorageService.languageNameToCode(chosen);
                       await StorageService.setPreferredLanguage(code);
+
+                      // 🟢 UPDATE LOCALIZATION PROVIDER FOR INSTANT LANGUAGE CHANGE
+                      Provider.of<LocalizationProvider>(
+                        context,
+                        listen: false,
+                      ).changeLanguage(code);
+
                       // Sync to Supabase
                       try {
                         final user = Supabase.instance.client.auth.currentUser;
@@ -262,7 +273,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.accessibility_new_outlined,
                 iconColor: const Color(0xFF1A5C2A),
-                label: 'Accessibility',
+                label: AppLocalizations.of(context)!.accessibility,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -281,7 +292,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.help_outline,
                 iconColor: Colors.grey,
-                label: 'Help & Support',
+                label: AppLocalizations.of(context)!.helpSupport,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -292,7 +303,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.description_outlined,
                 iconColor: Colors.grey,
-                label: 'Terms & Conditions',
+                label: AppLocalizations.of(context)!.termsConditions,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -305,7 +316,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _SettingsItem(
                 icon: Icons.privacy_tip_outlined,
                 iconColor: Colors.grey,
-                label: 'Privacy Policy',
+                label: AppLocalizations.of(context)!.privacyPolicy,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -448,7 +459,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         border: Border.all(color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -538,16 +549,16 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           border: Border.all(color: const Color(0xFFE0E0E0)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
           ],
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            'Log out',
-            style: TextStyle(
+            AppLocalizations.of(context)!.logout,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: Colors.redAccent,

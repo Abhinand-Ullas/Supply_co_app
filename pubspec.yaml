@@ -30,6 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  provider: ^6.0.0
   supabase_flutter: ^2.8.0  # Check for the latest version
   flutter_dotenv: ^6.0.0  # Add this line
   shared_preferences: ^2.2.2
@@ -58,6 +62,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Enable localization code generation from ARB files
+  generate: true
+  
   assets:
     - .env
     - lib/images/
