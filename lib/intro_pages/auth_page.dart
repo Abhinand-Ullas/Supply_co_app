@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supply_co/core_pages/homepage.dart';
+import 'package:supply_co/services/local_storage_service.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -13,7 +14,8 @@ class _AuthPageState extends State<AuthPage> {
   bool isRegisterTab = true;
 
   final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController mobileRegisterController = TextEditingController();
+  final TextEditingController mobileRegisterController =
+      TextEditingController();
   final TextEditingController otpController = TextEditingController();
   final TextEditingController mobileLoginController = TextEditingController();
   final TextEditingController loginOtpController = TextEditingController();
@@ -41,6 +43,21 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   // ─────────────────────────────────────────────
+  // HELPER — Sync language preference to Supabase
+  // ─────────────────────────────────────────────
+  Future<void> _syncLanguageToSupabase(String userId) async {
+    try {
+      final languageCode = StorageService.getPreferredLanguage();
+      await supabase
+          .from('user_details')
+          .update({'preferred_language': languageCode})
+          .eq('id', userId);
+    } catch (e) {
+      debugPrint('Error syncing language to Supabase: $e');
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // PHONE AUTH — SEND OTP (Register)
   // ─────────────────────────────────────────────
   Future<void> _sendOtp(String phone) async {
@@ -52,15 +69,19 @@ class _AuthPageState extends State<AuthPage> {
         isOtpRequested = true;
         isLoading_otpfor_registration = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent successfully!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("OTP sent successfully!")));
     } on AuthException catch (e) {
       setState(() => isLoading_otpfor_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_otpfor_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -84,6 +105,7 @@ class _AuthPageState extends State<AuthPage> {
           'name': fullName,
           'phone_number': formattedPhone,
         });
+        await _syncLanguageToSupabase(response.user!.id);
         setState(() => isLoading_for_registration = false);
         if (mounted) {
           Navigator.pushReplacement(
@@ -94,10 +116,14 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on AuthException catch (e) {
       setState(() => isLoading_for_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_for_registration = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -114,7 +140,9 @@ class _AuthPageState extends State<AuthPage> {
     }
     if (phone.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid 10-digit mobile number")),
+        const SnackBar(
+          content: Text("Please enter a valid 10-digit mobile number"),
+        ),
       );
       return;
     }
@@ -126,15 +154,19 @@ class _AuthPageState extends State<AuthPage> {
         isLoginOtpRequested = true;
         isLoading_otpfor_login = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent successfully!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("OTP sent successfully!")));
     } on AuthException catch (e) {
       setState(() => isLoading_otpfor_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_otpfor_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -145,9 +177,9 @@ class _AuthPageState extends State<AuthPage> {
     final formattedPhone = '+91${mobileLoginController.text.trim()}';
     final otp = loginOtpController.text.trim();
     if (otp.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter OTP")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please enter OTP")));
       return;
     }
     setState(() => isLoading_login = true);
@@ -167,7 +199,9 @@ class _AuthPageState extends State<AuthPage> {
         if (profile == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Number not registered. Please register first.")),
+              const SnackBar(
+                content: Text("Number not registered. Please register first."),
+              ),
             );
             setState(() {
               isRegisterTab = true;
@@ -177,6 +211,7 @@ class _AuthPageState extends State<AuthPage> {
           }
         } else {
           if (mounted) {
+            await _syncLanguageToSupabase(response.user!.id);
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => HomePage()),
@@ -186,10 +221,14 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on AuthException catch (e) {
       setState(() => isLoading_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_login = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -199,11 +238,12 @@ class _AuthPageState extends State<AuthPage> {
   // Login tab: checks if user exists → if not, redirects to register
   // ─────────────────────────────────────────────
   Future<void> _signInWithGoogle() async {
-
     // REGISTER TAB ONLY: Stop if name field is empty
     if (isRegisterTab && fullNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter your name before continuing")),
+        const SnackBar(
+          content: Text("Please enter your name before continuing"),
+        ),
       );
       return; // Don't proceed — user must fill name field first
     }
@@ -233,8 +273,9 @@ class _AuthPageState extends State<AuthPage> {
               .maybeSingle(); // Returns null if not found
 
           if (existingProfile != null) {
-            // EXISTING USER → go to HomePage directly
+            // EXISTING USER → sync language and go to HomePage
             if (mounted) {
+              await _syncLanguageToSupabase(user.id);
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => HomePage()),
@@ -250,6 +291,7 @@ class _AuthPageState extends State<AuthPage> {
                 'name': fullNameController.text.trim(),
                 'email': user.email ?? '',
               });
+              await _syncLanguageToSupabase(user.id);
 
               if (mounted) {
                 Navigator.pushReplacement(
@@ -273,10 +315,14 @@ class _AuthPageState extends State<AuthPage> {
       });
     } on AuthException catch (e) {
       setState(() => isLoading_google_signin = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       setState(() => isLoading_google_signin = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -292,7 +338,11 @@ class _AuthPageState extends State<AuthPage> {
         ),
         title: const Text(
           "Register / Login",
-          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         centerTitle: true,
       ),
@@ -319,7 +369,9 @@ class _AuthPageState extends State<AuthPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: isRegisterTab ? Colors.orange[100] : Colors.transparent,
+                          color: isRegisterTab
+                              ? Colors.orange[100]
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
@@ -328,7 +380,9 @@ class _AuthPageState extends State<AuthPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: isRegisterTab ? Colors.orange : Colors.grey[600],
+                            color: isRegisterTab
+                                ? Colors.orange
+                                : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -346,7 +400,9 @@ class _AuthPageState extends State<AuthPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: !isRegisterTab ? Colors.orange[100] : Colors.transparent,
+                          color: !isRegisterTab
+                              ? Colors.orange[100]
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
@@ -355,7 +411,9 @@ class _AuthPageState extends State<AuthPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: !isRegisterTab ? Colors.orange : Colors.grey[600],
+                            color: !isRegisterTab
+                                ? Colors.orange
+                                : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -393,7 +451,10 @@ class _AuthPageState extends State<AuthPage> {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 15),
@@ -407,7 +468,13 @@ class _AuthPageState extends State<AuthPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text("+91", style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500)),
+                    Text(
+                      "+91",
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     const Text("🇮🇳", style: TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
@@ -425,7 +492,10 @@ class _AuthPageState extends State<AuthPage> {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 12,
+              ),
             ),
             keyboardType: TextInputType.phone,
           ),
@@ -439,7 +509,9 @@ class _AuthPageState extends State<AuthPage> {
                 if (fullNameController.text.trim().isEmpty &&
                     mobileRegisterController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter your name & number")),
+                    const SnackBar(
+                      content: Text("Please enter your name & number"),
+                    ),
                   );
                   return;
                 }
@@ -457,7 +529,11 @@ class _AuthPageState extends State<AuthPage> {
                 }
                 if (mobileRegisterController.text.length != 10) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please enter a valid 10-digit mobile number")),
+                    const SnackBar(
+                      content: Text(
+                        "Please enter a valid 10-digit mobile number",
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -482,7 +558,10 @@ class _AuthPageState extends State<AuthPage> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 12,
+                ),
               ),
               keyboardType: TextInputType.number,
             ),
@@ -493,7 +572,11 @@ class _AuthPageState extends State<AuthPage> {
                 onTap: () => _sendOtp(mobileRegisterController.text.trim()),
                 child: Text(
                   "Resend OTP",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w400),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ),
@@ -545,14 +628,20 @@ class _AuthPageState extends State<AuthPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B4D3E),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         // Show spinner while loading, otherwise show button text
         child: isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : Text(
                 text,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
       ),
     );
@@ -568,7 +657,10 @@ class _AuthPageState extends State<AuthPage> {
         Expanded(child: Divider(color: Colors.grey[300])),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text("Or", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          child: Text(
+            "Or",
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
         ),
         Expanded(child: Divider(color: Colors.grey[300])),
       ],
@@ -591,7 +683,13 @@ class _AuthPageState extends State<AuthPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text("+91", style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500)),
+                    Text(
+                      "+91",
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     const Text("🇮🇳", style: TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
@@ -609,7 +707,10 @@ class _AuthPageState extends State<AuthPage> {
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 12,
+              ),
             ),
             keyboardType: TextInputType.phone,
           ),
@@ -638,7 +739,10 @@ class _AuthPageState extends State<AuthPage> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide(color: Colors.grey[400]!, width: 1),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 12,
+                ),
               ),
               keyboardType: TextInputType.number,
             ),
@@ -649,7 +753,11 @@ class _AuthPageState extends State<AuthPage> {
                 onTap: () => _sendLoginOtp(),
                 child: Text(
                   "Resend OTP",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w400),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ),

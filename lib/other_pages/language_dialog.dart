@@ -27,8 +27,11 @@ class _LanguageDialogState extends State<LanguageDialog> {
 
   static const List<String> _languages = [
     'English',
-    'Hindi',
     'Malayalam',
+    'Gujarati',
+    'Marathi',
+    'Hindi',
+    'Bengali',
     'Tamil',
     'Telugu',
   ];

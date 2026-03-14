@@ -33,11 +33,13 @@ class _GetStartedState extends State<GetStarted>
   bool _dropdownOpen = false;
 
   static const List<String> _otherLanguages = [
+    'Malayalam',
     'Gujarati',
     'Marathi',
-    'Malayalam',
     'Hindi',
     'Bengali',
+    'Tamil',
+    'Telugu',
   ];
 
   String get _othersBoxLabel =>
@@ -195,10 +197,13 @@ class _GetStartedState extends State<GetStarted>
                           height: 22,
                         ),
                 ),
-                onTap: () => setState(() {
-                  _selectedLanguage = 'English';
-                  _dropdownOpen = false;
-                }),
+                onTap: () async {
+                  await StorageService.setPreferredLanguage('en');
+                  setState(() {
+                    _selectedLanguage = 'English';
+                    _dropdownOpen = false;
+                  });
+                },
               ),
 
               const SizedBox(height: 10),
@@ -248,10 +253,14 @@ class _GetStartedState extends State<GetStarted>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           InkWell(
-                            onTap: () => setState(() {
-                              _selectedLanguage = lang;
-                              _dropdownOpen = false;
-                            }),
+                            onTap: () async {
+                              final code = StorageService.languageNameToCode(lang);
+                              await StorageService.setPreferredLanguage(code);
+                              setState(() {
+                                _selectedLanguage = lang;
+                                _dropdownOpen = false;
+                              });
+                            },
                             borderRadius: BorderRadius.vertical(
                               top: isFirst
                                   ? const Radius.circular(14)
@@ -323,6 +332,8 @@ class _GetStartedState extends State<GetStarted>
                   onPressed: () async {
                     await StorageService.markOnboardingSeen();
                     await StorageService.setGuestMode(true);
+                    final code = StorageService.languageNameToCode(_selectedLanguage);
+                    await StorageService.setPreferredLanguage(code);
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => HomePage()),
@@ -355,6 +366,8 @@ class _GetStartedState extends State<GetStarted>
                 child: ElevatedButton(
                   onPressed: () async {
                     await StorageService.markOnboardingSeen();
+                    final code = StorageService.languageNameToCode(_selectedLanguage);
+                    await StorageService.setPreferredLanguage(code);
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => const AuthPage()),

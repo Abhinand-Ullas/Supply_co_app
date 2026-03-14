@@ -6,6 +6,7 @@ import 'package:supply_co/other_pages/help_support.dart';
 import 'package:supply_co/other_pages/manage_alerts.dart';
 import 'package:supply_co/other_pages/privacy_policy.dart';
 import 'package:supply_co/other_pages/terms_conditions.dart';
+import 'package:supply_co/services/local_storage_service.dart';
 
 // Import your existing pages.
 // Adjust the paths to match your actual project folder structure.
@@ -62,17 +63,21 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
       if (user == null) {
         // No logged-in user → stay as guest, just stop loading.
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            // Load language from local storage even for guests
+            final languageCode = StorageService.getPreferredLanguage();
+            _selectedLanguage = StorageService.codeToLanguageName(languageCode);
+          });
+        }
         return;
       }
 
-      // Query user_details table:
-      //   .select('name, phone') — only fetch the two columns we need
-      //   .eq('id', user.id)     — filter: row where id = logged-in user's uid
-      //   .maybeSingle()         — returns one Map or null (no exception if missing)
+      // User is authenticated. Try to fetch from Supabase.
       final data = await Supabase.instance.client
           .from('user_details')
-          .select('name, phone_number')
+          .select('name, phone_number, preferred_language')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -80,15 +85,31 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       // data is a Map<String, dynamic> like {'name': 'Sam', 'phone': '9876554321'}
       if (mounted) {
         setState(() {
-          _name = data?['name']?.toString().toUpperCase();
-          _phone = data?['phone']?.toString();
+          // If data exists, use it; otherwise show "User" since we're authenticated
+          _name = data?['name']?.toString().toUpperCase() ?? 'User';
+          _phone = data?['phone_number']?.toString();
+
+          // Get language preference from DB, or fall back to local storage
+          final languageCode = data?['preferred_language'] as String? ??
+              StorageService.getPreferredLanguage();
+          _selectedLanguage = StorageService.codeToLanguageName(languageCode);
           _isLoading = false;
         });
       }
     } catch (e) {
-      // On any error (network, permission etc.), silently fall back to guest.
+      // On any error (network, permission etc.), fall back to local data if authenticated
       debugPrint('Error loading user details: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        final user = Supabase.instance.client.auth.currentUser;
+        setState(() {
+          // If user is authenticated but fetch failed, show "User" instead of "GUEST USER"
+          _name = user != null ? 'User' : null;
+          // Always load language from local storage as fallback
+          final languageCode = StorageService.getPreferredLanguage();
+          _selectedLanguage = StorageService.codeToLanguageName(languageCode);
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -213,12 +234,26 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                     context: context,
                     builder: (_) =>
                         LanguageDialog(currentLanguage: _selectedLanguage),
-                  ).then((chosen) {
+                  ).then((chosen) async {
                     // 'chosen' is the language string returned by the dialog,
                     // or null if the user tapped outside / pressed Cancel.
                     if (chosen != null && chosen != _selectedLanguage) {
                       setState(() => _selectedLanguage = chosen);
-                      // TODO: Save _selectedLanguage to your database here.
+                      // Save to local storage
+                      final code = StorageService.languageNameToCode(chosen);
+                      await StorageService.setPreferredLanguage(code);
+                      // Sync to Supabase
+                      try {
+                        final user = Supabase.instance.client.auth.currentUser;
+                        if (user != null) {
+                          await Supabase.instance.client
+                              .from('user_details')
+                              .update({'preferred_language': code})
+                              .eq('id', user.id);
+                        }
+                      } catch (e) {
+                        debugPrint('Error saving language to Supabase: $e');
+                      }
                       debugPrint('Language changed to: $_selectedLanguage');
                     }
                   });

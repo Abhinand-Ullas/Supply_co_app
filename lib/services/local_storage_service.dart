@@ -8,6 +8,7 @@ class StorageService {
   static const _keyAllStores = 'all_stores_cache';
   static const _keyOnboarding = 'seen_onboarding';
   static const _keyGuestMode = 'guest_mode';
+  static const _keyPreferredLanguage = 'preferred_language';
 
   // Call once in main.dart before runApp()
   static Future<void> init() async {
@@ -27,6 +28,49 @@ class StorageService {
 
   static Future<void> setGuestMode(bool value) =>
       _prefs.setBool(_keyGuestMode, value);
+
+  // ── Language Preference ─────────────────────────────────────
+
+  static bool hasPreferredLanguage() =>
+      _prefs.containsKey(_keyPreferredLanguage);
+
+  static String getPreferredLanguage() =>
+      _prefs.getString(_keyPreferredLanguage) ?? 'en';
+
+  static Future<void> setPreferredLanguage(String languageCode) =>
+      _prefs.setString(_keyPreferredLanguage, languageCode);
+
+  /// Converts display language name to ISO 639-1 code
+  /// e.g. 'English' → 'en', 'Malayalam' → 'ml'
+  static String languageNameToCode(String languageName) {
+    const Map<String, String> languageMap = {
+      'English': 'en',
+      'Malayalam': 'ml',
+      'Gujarati': 'gu',
+      'Marathi': 'mr',
+      'Hindi': 'hi',
+      'Bengali': 'bn',
+      'Tamil': 'ta',
+      'Telugu': 'te',
+    };
+    return languageMap[languageName] ?? 'en';
+  }
+
+  /// Converts ISO 639-1 code to display language name
+  /// e.g. 'ml' → 'Malayalam', 'en' → 'English'
+  static String codeToLanguageName(String code) {
+    const Map<String, String> codeMap = {
+      'en': 'English',
+      'ml': 'Malayalam',
+      'gu': 'Gujarati',
+      'mr': 'Marathi',
+      'hi': 'Hindi',
+      'bn': 'Bengali',
+      'ta': 'Tamil',
+      'te': 'Telugu',
+    };
+    return codeMap[code] ?? 'English';
+  }
 
   // ── Store List Cache ───────────────────────────────────────
 

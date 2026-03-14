@@ -40,11 +40,23 @@ Future<void> main() async {
     print('main(): NotificationService init called');
 
     // Listen for auth state changes globally
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       final event = data.event;
       print('auth state change: $event');
       if (event == AuthChangeEvent.signedIn) {
         StorageService.setGuestMode(false);
+        final user = data.session?.user;
+        if (user != null) {
+          final languageCode = StorageService.getPreferredLanguage();
+          try {
+            await Supabase.instance.client
+                .from('user_details')
+                .update({'preferred_language': languageCode})
+                .eq('id', user.id);
+          } catch (e) {
+            print('Error syncing language: $e');
+          }
+        }
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => HomePage()),
           (route) => false,
