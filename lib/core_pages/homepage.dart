@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:supply_co/core_pages/stockpage.dart';
+import 'package:supply_co/other_pages/whatsapp_alert_page.dart';
 import 'package:supply_co/services/notification_service.dart';
 import 'package:supply_co/services/supabase_service.dart';
 import 'package:supply_co/services/local_storage_service.dart';
@@ -83,7 +84,8 @@ class _HomePageState extends State<HomePage> {
     if (Firebase.apps.isEmpty) return;
     try {
       String? token = await FirebaseMessaging.instance.getToken();
-      if (token != null) await SupabaseService().updateUserDetails(fcmToken: token);
+      if (token != null)
+        await SupabaseService().updateUserDetails(fcmToken: token);
       FirebaseMessaging.instance.onTokenRefresh.listen((t) {
         SupabaseService().updateUserDetails(fcmToken: t);
       });
@@ -160,7 +162,10 @@ class _HomePageState extends State<HomePage> {
       final place = s['address']?.toString().toLowerCase() ?? '';
       final code = s['govt_store_id']?.toString().toLowerCase() ?? '';
       final matchQuery =
-          q.isEmpty || name.contains(q) || place.contains(q) || code.contains(q);
+          q.isEmpty ||
+          name.contains(q) ||
+          place.contains(q) ||
+          code.contains(q);
       return matchDistrict && matchQuery;
     }).toList();
   }
@@ -177,7 +182,8 @@ class _HomePageState extends State<HomePage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
-                  'Please turn on GPS / Location from your phone settings.'),
+                'Please turn on GPS / Location from your phone settings.',
+              ),
               backgroundColor: Colors.red,
               action: SnackBarAction(
                 label: 'Open Settings',
@@ -228,7 +234,8 @@ class _HomePageState extends State<HomePage> {
     if (!serviceEnabled) return;
     final permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) return;
+        permission == LocationPermission.deniedForever)
+      return;
 
     setState(() => _isSilentRefresh = true);
     try {
@@ -251,7 +258,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _suggestions = q.isEmpty
           ? []
-          : _filterStores(query: q, district: _selectedDistrict).take(5).toList();
+          : _filterStores(
+              query: q,
+              district: _selectedDistrict,
+            ).take(5).toList();
     });
   }
 
@@ -292,10 +302,8 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => StockPage(
-          storeId: id,
-          supplyCOName: store['name'] ?? 'SupplyCo',
-        ),
+        builder: (_) =>
+            StockPage(storeId: id, supplyCOName: store['name'] ?? 'SupplyCo'),
       ),
     );
   }
@@ -305,8 +313,8 @@ class _HomePageState extends State<HomePage> {
     final storeInfo = Map<String, dynamic>.from(_lastSnapshot!['store_info']);
     final List<Map<String, dynamic>> cachedStockList =
         _lastSnapshot!['stock_data'] != null
-            ? List<Map<String, dynamic>>.from(_lastSnapshot!['stock_data'])
-            : [];
+        ? List<Map<String, dynamic>>.from(_lastSnapshot!['stock_data'])
+        : [];
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -372,11 +380,16 @@ class _HomePageState extends State<HomePage> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const ProfileSettingsPage()),
+                    builder: (_) => const ProfileSettingsPage(),
+                  ),
                 ),
                 child: CircleAvatar(
                   backgroundColor: Colors.white24,
-                  child: const Icon(Icons.person, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -386,12 +399,24 @@ class _HomePageState extends State<HomePage> {
       ),
       actions: [
         IconButton(
-            icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {},
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: IconButton(
-              icon: const Icon(Icons.chat, color: Colors.white),
-              onPressed: () {}),
+            icon: Image.asset(
+              'lib/images/whatsapp_icon.png',
+              width: 20,
+              height: 20,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => WhatsAppAlertsPage()),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -409,8 +434,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text(
               loc.searchSupplycoOutlets,
-              style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
 
@@ -438,14 +462,17 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: _green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: _performSearch,
                 child: Text(
                   loc.searchButton,
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -461,7 +488,8 @@ class _HomePageState extends State<HomePage> {
                   foregroundColor: _green,
                   side: BorderSide(color: _green.withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: _isFetchingLocation ? null : _fetchNearbyStores,
                 icon: _isFetchingLocation
@@ -474,7 +502,9 @@ class _HomePageState extends State<HomePage> {
                 label: Text(
                   _isFetchingLocation ? 'Locating...' : 'Find Nearest Outlets',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -483,12 +513,12 @@ class _HomePageState extends State<HomePage> {
             RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
-                style:
-                    const TextStyle(fontSize: 13, color: Colors.black54),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
                 children: [
                   TextSpan(
                     text: loc.tapSearchToFind(
-                        _selectedDistrict ?? 'your district'),
+                      _selectedDistrict ?? 'your district',
+                    ),
                   ),
                 ],
               ),
@@ -512,7 +542,9 @@ class _HomePageState extends State<HomePage> {
                       loc.pleaseEnterOutlet,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          fontSize: 13, color: Colors.black54),
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
@@ -544,9 +576,10 @@ class _HomePageState extends State<HomePage> {
                 const Text(
                   'Nearby Outlets',
                   style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
@@ -558,12 +591,15 @@ class _HomePageState extends State<HomePage> {
                     width: 6,
                     height: 6,
                     decoration: const BoxDecoration(
-                        color: _orange, shape: BoxShape.circle),
+                      color: _orange,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   const SizedBox(width: 4),
-                  Text('Updating',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade500)),
+                  Text(
+                    'Updating',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  ),
                 ],
               ),
           ],
@@ -591,9 +627,10 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     'View all ${_nearbyStores!.length} outlets',
                     style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: _green,
-                        fontSize: 14),
+                      fontWeight: FontWeight.w600,
+                      color: _green,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Icon(Icons.arrow_forward, size: 16, color: _green),
@@ -645,7 +682,9 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   name,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -653,14 +692,19 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   children: [
                     if (place.isNotEmpty) ...[
-                      Icon(Icons.location_on,
-                          size: 11, color: Colors.grey.shade500),
+                      Icon(
+                        Icons.location_on,
+                        size: 11,
+                        color: Colors.grey.shade500,
+                      ),
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           place,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500),
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -671,7 +715,9 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         '· $distance km',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade400),
+                          fontSize: 12,
+                          color: Colors.grey.shade400,
+                        ),
                       ),
                     ],
                   ],
@@ -683,8 +729,7 @@ class _HomePageState extends State<HomePage> {
           GestureDetector(
             onTap: () => _navigateToStock(store),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: _green,
                 borderRadius: BorderRadius.circular(20),
@@ -692,9 +737,10 @@ class _HomePageState extends State<HomePage> {
               child: const Text(
                 'Stock',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600),
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -713,11 +759,14 @@ class _HomePageState extends State<HomePage> {
           children: [
             Icon(Icons.location_searching, size: 15, color: _green),
             const SizedBox(width: 6),
-            const Text('Finding nearby outlets...',
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87)),
+            const Text(
+              'Finding nearby outlets...',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -735,11 +784,13 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const SizedBox(width: 14),
                 Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10))),
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -747,18 +798,22 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                          height: 12,
-                          width: 150,
-                          decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(4))),
+                        height: 12,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                       const SizedBox(height: 7),
                       Container(
-                          height: 10,
-                          width: 90,
-                          decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(4))),
+                        height: 10,
+                        width: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -780,8 +835,7 @@ class _HomePageState extends State<HomePage> {
           onTap: () =>
               setState(() => _districtDropdownOpen = !_districtDropdownOpen),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -823,9 +877,10 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: const [
                 BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3)),
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
               ],
             ),
             child: _loadingStores
@@ -841,14 +896,20 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 14),
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
                                 border: Border(
-                                    bottom: BorderSide(
-                                        color: Colors.grey.shade200)),
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade200,
+                                  ),
+                                ),
                               ),
-                              child: Text(d,
-                                  style: const TextStyle(fontSize: 15)),
+                              child: Text(
+                                d,
+                                style: const TextStyle(fontSize: 15),
+                              ),
                             ),
                           ),
                         )
@@ -874,9 +935,10 @@ class _HomePageState extends State<HomePage> {
         Text(
           loc.selectedOutlet,
           style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Colors.black54),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.black54,
+          ),
         ),
         const SizedBox(height: 10),
         Container(
@@ -887,9 +949,10 @@ class _HomePageState extends State<HomePage> {
             border: Border.all(color: _green.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                  color: _green.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4)),
+                color: _green.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
@@ -899,8 +962,9 @@ class _HomePageState extends State<HomePage> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                        color: _green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8)),
+                      color: _green.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Icon(Icons.store, color: _green, size: 24),
                   ),
                   const SizedBox(width: 14),
@@ -908,14 +972,21 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name,
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         if (place.isNotEmpty)
-                          Text(place,
-                              style: const TextStyle(
-                                  fontSize: 13, color: Colors.black54)),
+                          Text(
+                            place,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -929,8 +1000,9 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     distance != null
-                        ? AppLocalizations.of(context)!
-                            .kmAway(distance.toString())
+                        ? AppLocalizations.of(
+                            context,
+                          )!.kmAway(distance.toString())
                         : AppLocalizations.of(context)!.locationInfo,
                     style: const TextStyle(color: Colors.grey),
                   ),
@@ -939,10 +1011,13 @@ class _HomePageState extends State<HomePage> {
                         setState(() => _searchResults = _previewStores),
                     child: Row(
                       children: [
-                        Text(loc.viewMore,
-                            style: TextStyle(
-                                color: _green,
-                                fontWeight: FontWeight.bold)),
+                        Text(
+                          loc.viewMore,
+                          style: TextStyle(
+                            color: _green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(width: 4),
                         Icon(Icons.arrow_forward, size: 16, color: _green),
                       ],
@@ -976,10 +1051,12 @@ class _HomePageState extends State<HomePage> {
             onSubmitted: (_) => _performSearch(),
             decoration: InputDecoration(
               hintText: loc.searchByNamePlaceCode,
-              hintStyle:
-                  const TextStyle(color: Colors.black38, fontSize: 14),
-              prefixIcon: const Icon(Icons.search,
-                  color: Colors.black45, size: 20),
+              hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Colors.black45,
+                size: 20,
+              ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -996,9 +1073,10 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: const [
                 BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3)),
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
               ],
             ),
             child: Column(
@@ -1009,16 +1087,20 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 13),
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
                         decoration: BoxDecoration(
                           border: Border(
-                              bottom: BorderSide(
-                                  color: Colors.grey.shade200)),
+                            bottom: BorderSide(color: Colors.grey.shade200),
+                          ),
                         ),
                         child: Text(
                           _storeSuggestionLabel(s),
                           style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -1071,9 +1153,10 @@ class _LastVisitedCard extends StatelessWidget {
             Text(
               AppLocalizations.of(context)!.lastVisited,
               style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500),
+                fontSize: 12,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -1088,9 +1171,10 @@ class _LastVisitedCard extends StatelessWidget {
               border: Border.all(color: green.withValues(alpha: 0.25)),
               boxShadow: [
                 BoxShadow(
-                    color: green.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2)),
+                  color: green.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
             child: Row(
@@ -1099,8 +1183,9 @@ class _LastVisitedCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                      color: green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10)),
+                    color: green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Icon(Icons.store, color: green, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -1111,7 +1196,9 @@ class _LastVisitedCard extends StatelessWidget {
                       Text(
                         name,
                         style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1119,22 +1206,34 @@ class _LastVisitedCard extends StatelessWidget {
                       Row(
                         children: [
                           if (district.isNotEmpty) ...[
-                            Icon(Icons.location_on,
-                                size: 12, color: Colors.grey.shade500),
+                            Icon(
+                              Icons.location_on,
+                              size: 12,
+                              color: Colors.grey.shade500,
+                            ),
                             const SizedBox(width: 2),
-                            Text(district,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade500)),
+                            Text(
+                              district,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(Icons.access_time,
-                              size: 12, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(width: 2),
-                          Text(timeAgo,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade400)),
+                          Text(
+                            timeAgo,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -1148,9 +1247,10 @@ class _LastVisitedCard extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!.viewStock,
                       style: TextStyle(
-                          fontSize: 11,
-                          color: green,
-                          fontWeight: FontWeight.w600),
+                        fontSize: 11,
+                        color: green,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -1205,13 +1305,19 @@ class _ResultsPageState extends State<_ResultsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(loc.allSupplycoOutlets,
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                loc.allSupplycoOutlets,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
@@ -1226,25 +1332,33 @@ class _ResultsPageState extends State<_ResultsPage> {
                           ? loc.district(widget.district!)
                           : loc.allDistrictsLabel,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                        width: 1,
-                        height: 16,
-                        color: Colors.grey.shade300),
+                      width: 1,
+                      height: 16,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(width: 8),
-                    Text(loc.outletFound(widget.results.length),
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.black54)),
+                    Text(
+                      loc.outletFound(widget.results.length),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 6, bottom: 4),
-                child: Text(loc.sortedByDistance,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade500)),
+                child: Text(
+                  loc.sortedByDistance,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
               ),
               OutlinedButton.icon(
                 onPressed: () =>
@@ -1255,9 +1369,12 @@ class _ResultsPageState extends State<_ResultsPage> {
                   foregroundColor: Colors.black87,
                   side: BorderSide(color: Colors.grey.shade400),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   textStyle: const TextStyle(fontSize: 13),
                 ),
               ),
@@ -1266,8 +1383,7 @@ class _ResultsPageState extends State<_ResultsPage> {
         ),
         Expanded(
           child: ListView.builder(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _displayed.length + 1,
             itemBuilder: (context, index) {
               if (index == _displayed.length) return _buildFooter();
@@ -1301,7 +1417,9 @@ class _ResultsPageState extends State<_ResultsPage> {
                 Text(
                   place.toString().isNotEmpty ? '$name - $place' : name,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -1310,11 +1428,14 @@ class _ResultsPageState extends State<_ResultsPage> {
                     const SizedBox(width: 4),
                     Text(
                       distance != null
-                          ? AppLocalizations.of(context)!
-                              .kmAway(distance.toString())
+                          ? AppLocalizations.of(
+                              context,
+                            )!.kmAway(distance.toString())
                           : AppLocalizations.of(context)!.kmAway('2.0'),
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
@@ -1327,9 +1448,9 @@ class _ResultsPageState extends State<_ResultsPage> {
               foregroundColor: Colors.black87,
               side: BorderSide(color: Colors.grey.shade400),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 6),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               textStyle: const TextStyle(fontSize: 13),
             ),
             child: Text('${loc.viewStock} >'),
@@ -1345,8 +1466,11 @@ class _ResultsPageState extends State<_ResultsPage> {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
-            child: Text(loc.noOutletsFound,
-                style: const TextStyle(color: Colors.black54))),
+          child: Text(
+            loc.noOutletsFound,
+            style: const TextStyle(color: Colors.black54),
+          ),
+        ),
       );
     }
     if (_hasMore) {
@@ -1365,7 +1489,9 @@ class _ResultsPageState extends State<_ResultsPage> {
               child: Text(
                 AppLocalizations.of(context)!.viewMoreOutlets,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.black87),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ),
@@ -1375,9 +1501,10 @@ class _ResultsPageState extends State<_ResultsPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
-        child: Text(loc.loadingMoreOutlets,
-            style: const TextStyle(
-                fontSize: 13, color: Colors.black38)),
+        child: Text(
+          loc.loadingMoreOutlets,
+          style: const TextStyle(fontSize: 13, color: Colors.black38),
+        ),
       ),
     );
   }
@@ -1402,8 +1529,9 @@ class _SearchIllustration extends StatelessWidget {
             width: 170,
             height: 170,
             decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: green.withValues(alpha: 0.07)),
+              shape: BoxShape.circle,
+              color: green.withValues(alpha: 0.07),
+            ),
           ),
           Container(
             width: 90,
@@ -1418,20 +1546,26 @@ class _SearchIllustration extends StatelessWidget {
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   height: 8,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(4)),
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 Container(
                   margin: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   height: 8,
                   width: 50,
                   decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(4)),
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Icon(Icons.location_on, color: green, size: 24),
@@ -1449,9 +1583,10 @@ class _SearchIllustration extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2))
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
                 ],
               ),
               child: Icon(Icons.search, color: green, size: 26),
@@ -1464,10 +1599,10 @@ class _SearchIllustration extends StatelessWidget {
               width: 40,
               height: 30,
               decoration: BoxDecoration(
-                  color: green.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8)),
-              child:
-                  Icon(Icons.chat_bubble_outline, color: green, size: 18),
+                color: green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.chat_bubble_outline, color: green, size: 18),
             ),
           ),
         ],
