@@ -1,0 +1,117 @@
+\chapter{Introduction}
+
+\section{Topic Introduction}
+
+The Kerala State Civil Supplies Corporation Limited (SupplyCo), established in 1974, is one of the largest public distribution networks operating in India. With over 2000 retail outlets spread across all 14 districts of Kerala, SupplyCo serves as the backbone of the state's public distribution system, providing essential commodities such as rice, wheat, sugar, cooking oil, pulses, and other daily necessities at government-subsidized prices to millions of citizens \cite{supplyco_official}.
+
+The Public Distribution System (PDS) in India is a critical component of the government's food security framework, designed to ensure that essential commodities reach every household at affordable prices. In Kerala, SupplyCo plays a particularly vital role due to the state's high population density and its commitment to social welfare. The corporation operates under the Department of Food and Civil Supplies, Government of Kerala, and is responsible for procuring, storing, and distributing commodities through its extensive network of outlets \cite{pds_india}.
+
+Despite the critical importance of this distribution network, the current system operates with significant informational limitations. Citizens who wish to purchase commodities from a SupplyCo outlet have no reliable way to determine whether the items they need are currently in stock. The traditional method involves physically visiting the outlet, often traveling considerable distances, only to discover that the desired items are unavailable. This leads to wasted time, effort, and transportation costs, particularly affecting vulnerable populations such as the elderly, differently-abled individuals, and those living in rural areas.
+
+The advent of smartphones and mobile internet has transformed how citizens interact with government services worldwide. India's Digital India initiative, coupled with Kerala's progressive stance on e-governance, has created an ecosystem ripe for digital transformation of public services. Mobile applications have become the primary channel through which citizens access information and services, making a mobile-first approach to SupplyCo stock information both technically feasible and socially impactful.
+
+In this context, we present \textbf{MySupplyCo}, a comprehensive digital platform that bridges the information gap between SupplyCo outlets and the citizens they serve. The platform provides real-time inventory status information through an intuitive mobile application, enabling citizens to check stock availability, locate nearby outlets, and receive automated notifications when items are restocked --- all without leaving their homes.
+
+\section{Problem Statement}
+
+The current system of information dissemination at Kerala SupplyCo outlets suffers from several critical deficiencies:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Information Gap --- Lack of Real-Time Visibility:} Citizens have no reliable mechanism to check the current stock levels at any SupplyCo outlet before making a physical visit. This creates uncertainty, frustration, and a pervasive sense of helplessness in accessing essential public services. The absence of real-time data means citizens are making purchasing decisions based on guesswork or outdated information.
+
+    \item \textbf{Wasted Citizen Effort:} Multiple trips to SupplyCo outlets are often necessary because citizens cannot verify stock availability remotely. Each unsuccessful visit wastes time (often 30--60 minutes including travel), transportation costs, and physical effort. For working-class citizens and daily-wage earners, these wasted trips represent a tangible economic loss.
+
+    \item \textbf{Manual and Unsustainable Communication:} In some areas, informal WhatsApp groups or landline telephone inquiries serve as ad-hoc information channels. However, these require SupplyCo staff to manually update stock information, diverting their attention from core responsibilities. This approach is neither scalable nor standardized, and the information shared is often incomplete or delayed.
+
+    \item \textbf{Digital Divide and Equity Concerns:} The lack of a digital platform for accessing public service information creates inequity in citizen experience. Tech-savvy individuals may find workarounds through social media or personal contacts, while elderly citizens and those with limited digital literacy are left entirely dependent on physical visits. This widens the gap between digitally connected and disconnected populations.
+
+    \item \textbf{Absence of Proactive Communication:} There exists no automated system to notify citizens when an out-of-stock item becomes available again. Citizens who are waiting for a particular commodity must repeatedly check with the outlet, resulting in multiple unnecessary visits and phone calls.
+\end{enumerate}
+
+These problems collectively highlight the need for a digital solution that provides transparent, real-time, and accessible stock information to all citizens, regardless of their technical proficiency or physical mobility.
+
+\section{Objectives}
+
+The primary objectives of this project are:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Real-Time Stock Visibility:} Develop a mobile application that displays current stock levels, pricing, and availability status for all commodities at any SupplyCo outlet in Kerala, updated through automated data synchronization.
+
+    \item \textbf{Reduce Citizen Effort:} Enable citizens to check stock availability from their mobile devices before travelling to an outlet, thereby eliminating unnecessary trips and reducing the time and cost associated with procurement of essential goods.
+
+    \item \textbf{Automated Stock Updates:} Implement an automated backend system that periodically synchronizes stock data from the government database (or its simulation) to the application's backend, ensuring data freshness without manual intervention.
+
+    \item \textbf{Proactive Restock Notifications:} Deliver real-time push notifications to registered users when previously out-of-stock items become available at their preferred outlet, enabling timely purchases.
+
+    \item \textbf{WhatsApp-Based Accessibility:} Provide a WhatsApp alert subscription interface as a complementary access channel, particularly designed for elderly users and those who may find a dedicated application less accessible.
+
+    \item \textbf{Multi-Language Support:} Support eight Indian languages (English, Malayalam, Hindi, Gujarati, Marathi, Bengali, Tamil, and Telugu) to ensure the application is accessible to Kerala's diverse linguistic population, including migrant workers.
+
+    \item \textbf{Offline Capability:} Implement local caching mechanisms to ensure that users can view previously fetched stock data even when network connectivity is unavailable, with clear indicators of data freshness.
+
+    \item \textbf{Location-Based Store Discovery:} Integrate GPS-based geolocation services to help users discover SupplyCo outlets near their current location, complementing the search and filter functionality.
+
+    \item \textbf{Secure Architecture:} Design a system architecture that maintains strict data security through a read-only access model, ensuring no direct modification of government databases while still providing real-time information to citizens.
+\end{enumerate}
+
+\section{Novelty of Idea and Implementation Steps}
+
+\subsection{Novelty}
+
+The MySupplyCo platform introduces several novel concepts in the domain of public distribution system digitization:
+
+\begin{itemize}
+    \item \textbf{Three-Layer Read-Only Architecture:} Unlike traditional approaches that require direct integration with government systems, our architecture introduces a secure intermediary layer. The system comprises a Government Data Simulator (System A), a Main Backend Server (System B), and the Mobile Application. System B operates in a strictly read-only manner, fetching data from System A through authenticated API calls without any write access to government databases. This design ensures security while enabling real-time data delivery.
+
+    \item \textbf{Incremental Checkpoint-Based Synchronization:} The data synchronization mechanism uses a checkpoint timestamp stored in a dedicated metadata table. During each sync cycle, only records modified since the last checkpoint are fetched, significantly reducing bandwidth consumption and server load compared to full-table synchronization approaches.
+
+    \item \textbf{Database Webhook-Triggered Notifications:} Rather than polling for changes, the system uses database webhooks that fire when stock quantities transition from zero to a positive value. This event-driven approach ensures that restock notifications are delivered to users within seconds of the actual restocking event.
+
+    \item \textbf{Dual Access Channel Design:} The platform serves the same underlying data through two distinct channels --- a feature-rich mobile application and a simplified WhatsApp alert interface --- ensuring accessibility across different demographic segments and technology comfort levels.
+
+    \item \textbf{Eight-Language Runtime Localization:} The application supports runtime language switching across eight Indian languages without requiring an app restart, with language preferences synchronized to the backend to enable language-appropriate push notification content in future iterations.
+\end{itemize}
+
+\subsection{Implementation Steps}
+
+The project was implemented in the following systematic phases:
+
+\begin{enumerate}[label=\textbf{Step \arabic*:}]
+    \item \textbf{Requirements Analysis and Architecture Design:} Conducted feasibility studies, defined system requirements, and designed the three-layer architecture with clear interface boundaries.
+
+    \item \textbf{Database Schema Design:} Designed the relational database schema comprising five tables (stores, items, stock, user\_details, sync\_metadata) with appropriate relationships and constraints.
+
+    \item \textbf{Government Simulator Development:} Built the Django-based government data simulator with PostgreSQL, implementing REST API endpoints secured with API key authentication.
+
+    \item \textbf{Main Backend Setup:} Configured Supabase as the main backend with PostgreSQL, set up authentication providers (OTP and Google OAuth), and defined Row Level Security policies.
+
+    \item \textbf{Edge Function Development:} Developed two Supabase Edge Functions: \texttt{sync-stock} for periodic data synchronization and \texttt{send-push} for webhook-triggered push notifications.
+
+    \item \textbf{Mobile Application Development:} Built the Flutter-based cross-platform mobile application with all UI screens, services layer, and offline caching capabilities.
+
+    \item \textbf{Localization Implementation:} Implemented multi-language support using Flutter's ARB-based localization system with runtime language switching.
+
+    \item \textbf{Testing and Refinement:} Conducted unit testing, integration testing, and user acceptance testing across multiple devices and network conditions.
+\end{enumerate}
+
+\section{Societal and Industrial Relevance}
+
+\subsection{Alignment with Digital India}
+
+The MySupplyCo project directly aligns with the Government of India's Digital India programme, which envisions transforming India into a digitally empowered society and knowledge economy. By digitizing the stock information layer of the public distribution system, this project contributes to the programme's pillars of e-governance and digital empowerment of citizens \cite{digital_india}. The Kerala state government's progressive stance on e-governance, exemplified by initiatives such as e-District and Akshaya centres, provides an ideal ecosystem for deploying such citizen-centric digital services.
+
+\subsection{Citizen Empowerment}
+
+By placing real-time information directly in the hands of citizens, MySupplyCo democratizes access to public service information. Citizens are no longer passive recipients dependent on physical visits or personal contacts; they become informed consumers who can make data-driven decisions about when and where to purchase essential commodities. This empowerment is particularly significant for marginalized communities who have historically had limited access to timely information.
+
+\subsection{Environmental Impact}
+
+The reduction in unnecessary trips to SupplyCo outlets has a direct positive environmental impact. Each avoided trip eliminates transportation-related carbon emissions, reduces traffic congestion, and decreases fuel consumption. Across 2000+ outlets serving millions of citizens, even a modest reduction in unnecessary visits translates to a substantial decrease in the collective carbon footprint of essential commodity procurement.
+
+\subsection{Scalable Framework for Government Services}
+
+The modular architecture designed for MySupplyCo serves as a reusable framework for digitizing other government services. The pattern of secure API-based data synchronization from government databases, combined with a citizen-facing mobile application, can be adapted for services ranging from ration card management to municipal service tracking. The read-only security model ensures that this framework can be deployed without requiring modifications to existing government IT infrastructure.
+
+\subsection{Industrial Relevance}
+
+From an industry perspective, this project demonstrates the practical application of modern software engineering practices including serverless computing (Supabase Edge Functions), event-driven architecture (database webhooks), cross-platform mobile development (Flutter), and Backend-as-a-Service (Supabase) patterns. These technologies represent the current state-of-the-art in application development and are widely adopted across the technology industry.

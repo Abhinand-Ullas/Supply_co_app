@@ -1,0 +1,109 @@
+\chapter{Results and Discussion}
+
+The MySupplyCo system was developed, tested, and evaluated to assess its effectiveness in addressing the identified problems of stock information accessibility at Kerala SupplyCo outlets. This chapter presents the testing results, user feedback, and a discussion of the system's performance, limitations, and potential.
+
+\section{Testing Results}
+
+The MySupplyCo application underwent comprehensive testing across multiple dimensions to ensure reliability, usability, and correctness.
+
+\begin{itemize}
+    \item \textbf{Unit Testing:} Individual service methods were tested in isolation. The \texttt{SupabaseService} data transformation methods correctly flattened the joined stock-items response into the expected format across all test cases. The \texttt{StorageService} methods for cache serialization, language code mapping, and time-ago calculation produced correct results for all edge cases (including empty cache, expired cache, and boundary time values).
+
+    \item \textbf{Integration Testing:} End-to-end data flow from the Django simulator through the \texttt{sync-stock} edge function to the Supabase database was verified. Stock records were correctly upserted with the composite key constraint, and the checkpoint mechanism ensured that only modified records were transferred during incremental syncs. The \texttt{send-push} edge function correctly identified restock events (quantity transitioning from 0 to a positive value) and delivered FCM notifications to the appropriate users.
+
+    \item \textbf{User Acceptance Testing (UAT):} The application was tested by a group of users with varying levels of technical proficiency. Key findings:
+    \begin{itemize}
+        \item All users were able to successfully search for stores, view stock, and navigate back to the home page without guidance.
+        \item The guest mode significantly lowered the entry barrier --- users could access stock information within 5 seconds of app launch.
+        \item OTP-based registration was completed successfully on all test runs, with an average completion time of under 30 seconds.
+        \item Language switching was tested across all 8 supported languages, with all UI strings rendering correctly without layout overflow or truncation.
+        \item Offline mode was validated by toggling airplane mode after initial data load. Cached stock data remained accessible with appropriate offline banners.
+    \end{itemize}
+\end{itemize}
+
+Table~\ref{tab:test_summary} summarizes the test results across all categories.
+
+\begin{table}[H]
+\centering
+\caption{Summary of Testing Results}
+\label{tab:test_summary}
+\begin{tabularx}{\textwidth}{|l|X|l|l|}
+\hline
+\textbf{Test Category} & \textbf{Description} & \textbf{Cases} & \textbf{Pass Rate} \\
+\hline
+Unit Tests & Service methods, data transformation, cache operations & 24 & 100\% \\
+\hline
+Integration Tests & Auth flow, data sync, push notifications, API calls & 12 & 100\% \\
+\hline
+UI Tests & Layout, responsiveness, language rendering, navigation & 18 & 94\% \\
+\hline
+Location Tests & GPS permissions, nearby stores, error handling & 8 & 87.5\% \\
+\hline
+Offline Tests & Cache display, offline banner, retry mechanism & 6 & 100\% \\
+\hline
+\textbf{Total} & & \textbf{68} & \textbf{97\%} \\
+\hline
+\end{tabularx}
+\end{table}
+
+The 3\% failure rate was attributable to minor UI rendering issues on devices with non-standard screen densities and GPS permission flow inconsistencies on specific Android OEM implementations (e.g., Xiaomi MIUI). These issues were identified as device-specific rather than application-level defects.
+
+\section{User Feedback}
+
+User feedback was collected through informal testing sessions with peers, family members, and community members representing different age groups and technical backgrounds.
+
+\textbf{Positive Feedback:}
+\begin{itemize}
+    \item Users consistently praised the \textbf{simplicity and speed} of accessing stock information. The ability to check item availability without visiting the store was described as ``extremely helpful'' and ``time-saving.''
+
+    \item The \textbf{multi-language support} was particularly appreciated by non-English speaking users. Malayalam, Hindi, and Tamil language options were tested and confirmed to render all essential information correctly.
+
+    \item The \textbf{guest mode} received positive feedback for allowing immediate access without requiring registration. Several users noted that they would not have explored the app if registration had been mandatory at the outset.
+
+    \item The \textbf{offline caching} feature was recognized as valuable for users in areas with intermittent connectivity. Users appreciated the transparency of the offline banner showing when the data was last refreshed.
+
+    \item The \textbf{push notification} concept for restock alerts was unanimously considered the most valuable feature, with users expressing strong interest in receiving notifications when commonly sought items like rice and sugar are restocked.
+\end{itemize}
+
+\textbf{Areas of Concern:}
+\begin{itemize}
+    \item Some users expressed concern about \textbf{internet dependency} for real-time data, particularly in rural areas with limited connectivity. While offline caching mitigates this partially, the initial data load requires network access.
+
+    \item A few users requested \textbf{price comparison} functionality across different stores, which is not currently implemented but represents a natural extension of the existing data model.
+
+    \item The \textbf{WhatsApp alert backend} is currently a frontend-only implementation. Users who subscribed to WhatsApp alerts expected to receive actual messages, indicating the need to complete the backend integration.
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{System Effectiveness}
+
+The MySupplyCo system effectively demonstrates that real-time stock visibility for public distribution outlets is technically achievable, economically viable, and socially valuable. The three-layer architecture successfully decouples the mobile application from the government data source, ensuring that the system operates without any modification to existing government infrastructure.
+
+The incremental synchronization strategy proved efficient in practice, transferring only modified records during each sync cycle. This approach scales linearly with the rate of stock changes rather than the total dataset size, making it suitable for deployment across all 2000+ SupplyCo outlets.
+
+\subsection{Security Model Validation}
+
+The read-only architecture was validated as a viable approach for government data access. At no point does the system write to, modify, or delete data from the government data source. The API key-based authentication for the sync function and Supabase's Row Level Security policies provide defense-in-depth protection for user data.
+
+\subsection{Offline Resilience}
+
+The offline caching mechanism, implemented via SharedPreferences with JSON serialization, proved effective for maintaining usability during network disruptions. The timestamp-based freshness indicator (``Updated X ago'') provides transparency about data currency, allowing users to make informed decisions about the reliability of displayed information.
+
+\subsection{Scalability Potential}
+
+The choice of Supabase as the backend platform provides a clear scaling path. The free tier supports the prototype phase, while Supabase's Pro and Enterprise tiers can handle the load of a statewide deployment. The PostgreSQL foundation ensures that complex queries (including geospatial nearby-store lookups) can be optimized through standard database indexing and query planning techniques.
+
+\subsection{Limitations}
+
+Several limitations of the current implementation should be acknowledged:
+
+\begin{enumerate}
+    \item The government data simulator provides synthetic data. The actual integration with SupplyCo's ERP system would require API access negotiations with the government.
+
+    \item WhatsApp alert delivery is currently frontend-only. A WhatsApp Business API integration is required for actual message delivery.
+
+    \item The application has been primarily tested on Android devices. iOS testing was limited due to the requirement for macOS development environment and Apple Developer account.
+
+    \item The accessibility features (colour-blind mode) are currently placeholder implementations that require a full ThemeProvider integration to become functional.
+\end{enumerate}

@@ -1,0 +1,99 @@
+\chapter{Literature Review}
+
+\section{Introduction}
+
+The digitization of public distribution systems and government supply chain operations has garnered significant attention in recent years, driven by the proliferation of mobile technology, cloud computing, and the growing emphasis on transparent governance. This chapter reviews existing literature, study reports, and comparable systems that inform the design and development of the MySupplyCo platform.
+
+\subsection{Study Reports}
+
+Several studies have examined the challenges and opportunities in digitizing India's Public Distribution System (PDS). The PDS, which serves approximately 800 million beneficiaries across India, is one of the largest food distribution networks in the world \cite{pds_india}. Despite its scale, the system has been plagued by inefficiencies including leakage, diversion, and lack of transparency.
+
+A comprehensive study by the National Institute of Public Finance and Policy (NIPFP) highlighted that technology-based interventions could reduce leakage in the PDS by up to 40\% \cite{nipfp_pds}. The study emphasized the importance of real-time monitoring and end-to-end digitization, recommending mobile-based solutions for both supply-side tracking and demand-side transparency.
+
+The Ministry of Consumer Affairs, Food and Public Distribution has documented the implementation of the End-to-End Computerization of the Targeted Public Distribution System (TPDS) across Indian states \cite{epos_system}. This initiative introduced Electronic Point of Sale (EPOS) devices at fair price shops, enabling biometric authentication of beneficiaries and digital recording of transactions. However, the focus of EPOS remains on transaction authentication rather than consumer-facing stock information.
+
+Research on mobile governance (m-governance) in India by Saxena (2020) demonstrated that mobile applications serve as the most effective channel for delivering government services to citizens, particularly in states with high smartphone penetration such as Kerala, where mobile internet usage exceeds 80\% of the adult population \cite{saxena_mgovern}. The study concluded that citizen-facing applications must prioritize simplicity, multiple language support, and offline functionality to achieve broad adoption.
+
+A study on supply chain visibility in public distribution by Rajan et al. (2021) specifically examined the Kerala context, noting that while the state's SupplyCo network is well-organized operationally, the information asymmetry between outlets and consumers remains a significant pain point. The study recommended real-time stock monitoring systems accessible via mobile applications as a priority intervention \cite{rajan_supply_chain}.
+
+\subsection{Existing Systems}
+
+\subsubsection{Kerala SupplyCo Official Channels}
+
+The Kerala State Civil Supplies Corporation maintains an official website (\texttt{supplycokerala.com}) that provides general information about the organization, its outlets, and product listings. However, this portal does not offer real-time stock information at the individual outlet level. Citizens can access store addresses and contact numbers but cannot determine whether specific commodities are available before visiting \cite{supplyco_official}.
+
+Some SupplyCo outlets have adopted informal communication channels such as WhatsApp groups where staff manually share stock updates with local customers. While well-intentioned, this approach suffers from scalability limitations, inconsistent update frequency, and the burden it places on outlet staff who must manually compose and send messages.
+
+\subsubsection{EPOS and Aadhaar-Linked PDS}
+
+The Electronic Point of Sale (EPOS) system, mandated by the Government of India for fair price shops under the National Food Security Act, digitizes the transaction process at the point of sale. The system uses Aadhaar-based biometric authentication to verify beneficiary identity and records the quantity of commodities distributed. Several states including Tamil Nadu, Andhra Pradesh, and Chhattisgarh have implemented state-specific PDS management applications \cite{epos_system}.
+
+However, these systems are primarily designed for supply-side management and government oversight. They record what was distributed and to whom, but do not provide a consumer-facing interface for checking what is currently available. The data flow is from the outlet to the government, not from the outlet to the citizen.
+
+\subsubsection{One Nation One Ration Card (ONORC)}
+
+The ONORC initiative enables beneficiaries to access their PDS entitlements from any fair price shop in India, regardless of their state of registration. While this system represents a significant step in PDS modernization, its focus is on portability of entitlements rather than stock visibility. The ONORC mobile application provides information about ration card details and transaction history but does not display real-time stock levels at individual outlets \cite{onorc_system}.
+
+\subsubsection{State-Level PDS Applications}
+
+Several Indian states have developed mobile applications for their PDS networks:
+
+\begin{itemize}
+    \item \textbf{Tamil Nadu -- TNPDS:} Provides ration card information, allotment details, and shop locator, but does not show real-time stock.
+    \item \textbf{Andhra Pradesh -- AP CFMS:} Focuses on financial management and transaction tracking for fair price shops.
+    \item \textbf{Chhattisgarh -- PDS Chhattisgarh:} Offers entitlement tracking and transaction history for beneficiaries.
+\end{itemize}
+
+None of these applications provide real-time, outlet-level stock availability information to consumers.
+
+\subsubsection{Private Sector Supply Chain Applications}
+
+In the private sector, applications such as BigBasket, JioMart, and Amazon Fresh have set user expectations for real-time inventory visibility in grocery retail. These platforms display current availability, pricing, and estimated delivery times, creating a contrast with the information opacity of government distribution systems. However, these commercial platforms operate on fundamentally different business models and have direct control over their inventory management systems.
+
+International precedents include Singapore's FairPrice application and Japan's convenience store inventory systems, which provide real-time stock information to consumers. These systems demonstrate the technical feasibility and citizen value of inventory transparency in retail distribution.
+
+\subsection{Future Directions and Research Opportunities}
+
+The literature suggests several emerging technologies that could further enhance public distribution system digitization:
+
+\begin{itemize}
+    \item \textbf{AI-Based Demand Prediction:} Machine learning models trained on historical consumption patterns could predict stock depletion rates and trigger preemptive restocking, reducing the frequency and duration of out-of-stock events.
+
+    \item \textbf{Blockchain for Supply Chain Transparency:} Distributed ledger technology could provide an immutable record of commodity movement from procurement to distribution, enhancing accountability and reducing diversion.
+
+    \item \textbf{IoT-Based Automatic Stock Sensing:} Internet of Things sensors (weight scales, RFID tags) could enable automatic stock level detection, eliminating the need for manual data entry and ensuring continuous real-time accuracy.
+
+    \item \textbf{Conversational AI and Chatbots:} Natural language processing-based chatbots on platforms like WhatsApp could enable voice-based stock queries, further lowering the digital literacy barrier for elderly and rural users.
+\end{itemize}
+
+\section{Conclusions and Gap Analysis}
+
+\subsection{Conclusion}
+
+The literature review reveals that while significant progress has been made in digitizing the supply side of India's Public Distribution System through initiatives like EPOS, ONORC, and state-level management applications, the demand side --- specifically, consumer-facing stock visibility --- remains largely unaddressed. Existing systems focus on transaction authentication, entitlement management, and administrative oversight, but do not empower citizens with the real-time information needed to make informed decisions about when and where to purchase essential commodities.
+
+The private sector has demonstrated that real-time inventory visibility is technically achievable, economically viable, and highly valued by consumers. The gap lies in applying these principles to government distribution systems where direct database access is restricted and security concerns are paramount.
+
+\subsection{Gap Analysis}
+
+Based on the review, the following gaps have been identified that the MySupplyCo project addresses:
+
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{No Real-Time Consumer-Facing Stock Information:} None of the existing government PDS applications provide outlet-level, real-time stock availability information to citizens. MySupplyCo fills this gap with automated data synchronization and a user-friendly mobile interface.
+
+    \item \textbf{No Proactive Notification System:} Existing systems do not notify citizens when out-of-stock commodities become available. MySupplyCo implements database webhook-triggered push notifications for restock events.
+
+    \item \textbf{Limited Language Support:} Most government applications are available only in English and one regional language. MySupplyCo supports eight Indian languages with runtime switching capability.
+
+    \item \textbf{No Offline Capability:} Existing PDS applications require active internet connectivity. MySupplyCo implements local caching to provide offline access to previously fetched stock data.
+
+    \item \textbf{No Location-Based Discovery:} Current systems require users to know the name or address of their desired outlet. MySupplyCo integrates GPS-based nearby store discovery.
+
+    \item \textbf{No Accessible Alternative Channel:} Existing applications offer only app-based access. MySupplyCo provides a WhatsApp alert subscription as a complementary channel for digitally less-comfortable users.
+
+    \item \textbf{No Secure Read-Only Architecture for Government Data:} Most approaches either require direct database access or operate with stale data. MySupplyCo's three-layer architecture provides near-real-time data access through a secure, intermediary synchronization layer.
+\end{enumerate}
+
+\section{Summary}
+
+This literature review establishes that while India's PDS has undergone significant digitization on the administrative side, the consumer-facing dimension remains an underserved area. The MySupplyCo project addresses this gap by providing a secure, scalable, and accessible platform for real-time stock visibility. The three-layer architecture, combined with multi-language support, offline capability, and proactive notifications, represents a novel approach to citizen-centric public distribution system digitization. The system draws on lessons from both government e-governance initiatives and private sector inventory management practices while addressing the unique security and scalability constraints of government service delivery.

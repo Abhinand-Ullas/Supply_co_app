@@ -1,0 +1,185 @@
+\chapter{Feasibility Study and Requirements Analysis}
+
+\section{Feasibility}
+
+A comprehensive feasibility analysis was conducted to evaluate the viability of the MySupplyCo project across multiple dimensions. This analysis ensures that the proposed system is not only technically achievable but also economically sustainable, legally compliant, and operationally practical within the constraints of a government service delivery context.
+
+\subsection{Technical Feasibility}
+
+The technical feasibility of the project is assessed based on the availability and maturity of the technologies required for implementation.
+
+\begin{itemize}
+    \item \textbf{Flutter Framework:} Flutter, developed by Google, is a mature open-source UI software development kit for building cross-platform applications from a single codebase. It compiles to native ARM code for both Android and iOS, ensuring high performance. Flutter's widget-based architecture and hot-reload capability make it suitable for rapid prototyping and iterative development. The framework has been adopted by major organizations including Google, Alibaba, and BMW, demonstrating its production readiness \cite{flutter_docs}.
+
+    \item \textbf{Supabase (Backend-as-a-Service):} Supabase is an open-source alternative to Firebase, built on PostgreSQL. It provides authentication, real-time subscriptions, storage, and serverless edge functions out of the box. Its open-source nature ensures no vendor lock-in, and its PostgreSQL foundation provides enterprise-grade reliability and SQL compatibility. Supabase's Row Level Security (RLS) policies enable fine-grained access control at the database level \cite{supabase_docs}.
+
+    \item \textbf{Django Framework:} Django is a high-level Python web framework that encourages rapid development and clean, pragmatic design. For the government data simulator, Django's ORM (Object-Relational Mapping), built-in admin interface, and REST framework extension make it ideal for quickly building and managing a mock government database with API endpoints.
+
+    \item \textbf{PostgreSQL:} PostgreSQL is the world's most advanced open-source relational database system. It supports advanced features including JSON data types, full-text search, geospatial queries (via PostGIS), and stored procedures. Both the government simulator and the main backend use PostgreSQL, ensuring compatibility and leveraging its robust indexing and query optimization capabilities.
+
+    \item \textbf{Firebase Cloud Messaging (FCM):} FCM provides a reliable and battery-efficient connection between the server and devices for delivering push notifications at no cost. It supports both Android and iOS platforms and handles message queuing, delivery confirmation, and topic-based messaging \cite{firebase_docs}.
+
+    \item \textbf{Geolocator:} The Geolocator package for Flutter provides cross-platform access to GPS location services with configurable accuracy levels. Combined with PostGIS functions on the server side, this enables efficient nearby store discovery based on the user's current geographical coordinates.
+\end{itemize}
+
+All technologies selected are mature, well-documented, and actively maintained by large communities. The project team has prior experience with Flutter and web development, making the technical implementation feasible within the project timeline.
+
+\subsection{Economic Feasibility}
+
+The economic feasibility of the project is highly favourable due to the exclusive use of open-source technologies and free-tier cloud services:
+
+\begin{table}[H]
+\centering
+\caption{Cost Analysis of Project Components}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Component} & \textbf{Service/Tool} & \textbf{Cost} \\
+\hline
+Backend Database & Supabase Free Tier (500 MB database, 50,000 monthly active users) & Free \\
+\hline
+Push Notifications & Firebase Cloud Messaging (unlimited messages) & Free \\
+\hline
+Authentication & Supabase Auth (50,000 monthly active users) & Free \\
+\hline
+Edge Functions & Supabase Edge Functions (500,000 invocations/month) & Free \\
+\hline
+Government Simulator & Django on local/university server & Free \\
+\hline
+Development Tools & Flutter SDK, VS Code, Android Studio, Git & Free \\
+\hline
+Testing Devices & Team members' personal Android devices & No cost \\
+\hline
+Domain/Hosting & Not required for prototype phase & Free \\
+\hline
+\end{tabularx}
+\end{table}
+
+The total development cost for the prototype phase is effectively zero, as all tools, frameworks, and hosting services operate within their free tiers. For a production deployment, Supabase's Pro plan (\$25/month) and a Django hosting server (\$5--10/month) would represent the only recurring costs, making the system economically viable even for government budget constraints.
+
+\subsection{Time Feasibility}
+
+The project was planned for execution within the S6 semester (approximately 6 months), divided into the following phases:
+
+\begin{table}[H]
+\centering
+\caption{Project Timeline}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Phase} & \textbf{Activities} & \textbf{Duration} \\
+\hline
+Phase 1 & Requirements analysis, architecture design, UI/UX prototyping & 4 weeks \\
+\hline
+Phase 2 & Database schema design, Django simulator development & 3 weeks \\
+\hline
+Phase 3 & Supabase backend setup, edge function development & 3 weeks \\
+\hline
+Phase 4 & Flutter app development (core screens) & 5 weeks \\
+\hline
+Phase 5 & Localization, notifications, offline caching & 3 weeks \\
+\hline
+Phase 6 & Testing, bug fixing, documentation & 4 weeks \\
+\hline
+\end{tabularx}
+\end{table}
+
+The timeline is feasible given the team size of three developers and the modular nature of the architecture, which allows parallel development of the frontend, backend, and simulator components.
+
+\subsection{Legal Feasibility}
+
+The legal aspects of the project have been carefully considered:
+
+\begin{itemize}
+    \item \textbf{No Government System Modification:} The system operates in a strictly read-only mode. It does not modify, delete, or write any data to government databases. The government simulator is an independent system created solely for testing purposes.
+
+    \item \textbf{Data Privacy Compliance:} The application collects minimal personal data (name, phone number, optional email) required for authentication and notification delivery. A comprehensive privacy policy has been implemented within the application, clearly stating data collection practices, usage limitations, and user rights.
+
+    \item \textbf{Open-Source Licensing:} All technologies used (Flutter, Supabase, Django, PostgreSQL, Firebase) are available under permissive open-source licenses (BSD, Apache 2.0, MIT) that allow commercial and government use without licensing fees or legal restrictions.
+
+    \item \textbf{Terms and Conditions:} The application includes terms and conditions that define user responsibilities, acceptable use policies, and limitation of liability, ensuring legal protection for both the service provider and users.
+\end{itemize}
+
+\subsection{Operational Feasibility}
+
+The operational feasibility assessment evaluates whether the system can be effectively deployed and maintained in a real-world government setting:
+
+\begin{itemize}
+    \item \textbf{Modular Architecture for Government Integration:} The three-layer architecture is designed so that the government simulator (System A) can be replaced with the actual government API when it becomes available. Only the synchronization layer needs modification; the mobile application and main backend remain unchanged.
+
+    \item \textbf{Minimal Training Requirements:} The mobile application is designed with an intuitive user interface following Material Design guidelines. The onboarding flow, guest mode access, and multi-language support ensure that users with varying levels of digital literacy can use the application with minimal or no training.
+
+    \item \textbf{Scalable Infrastructure:} Supabase's cloud infrastructure can scale horizontally to handle increased load as more outlets and users are onboarded. The incremental synchronization strategy ensures that the backend load grows linearly with the number of modified records, not the total dataset size.
+
+    \item \textbf{Low Maintenance Overhead:} The serverless edge functions require no server management. Supabase handles database backups, security patches, and infrastructure updates. The only operational requirement is monitoring the sync function's execution and addressing any API connectivity issues.
+\end{itemize}
+
+\section{Project Requirements}
+
+\subsection{Implementation Requirements}
+
+\subsubsection{Hardware Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Hardware Requirements}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+Development Machine & Intel Core i5 or equivalent, 8 GB RAM, 256 GB SSD \\
+\hline
+Testing Device (Android) & Android 8.0+, 2 GB RAM, GPS-enabled \\
+\hline
+Testing Device (iOS) & iPhone with iOS 14.0+ (optional) \\
+\hline
+Internet Connection & Broadband with minimum 10 Mbps for development \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Software Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Software Requirements}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Category} & \textbf{Software} & \textbf{Version} \\
+\hline
+Programming Language & Dart & 3.10.4+ \\
+\hline
+Mobile Framework & Flutter SDK & 3.x \\
+\hline
+Backend Platform & Supabase & Latest \\
+\hline
+Server Framework & Django & 4.x \\
+\hline
+Database & PostgreSQL & 15+ \\
+\hline
+Push Notifications & Firebase Cloud Messaging & Latest \\
+\hline
+IDE & Visual Studio Code / Android Studio & Latest \\
+\hline
+Version Control & Git, GitHub & Latest \\
+\hline
+Design Tool & Figma & Web version \\
+\hline
+Operating System & Windows 10/11, macOS, or Linux & Latest \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Deployment Requirements}
+
+For the prototype phase, the following deployment setup is required:
+
+\begin{itemize}
+    \item \textbf{Supabase Cloud:} A Supabase project instance for hosting the PostgreSQL database, authentication service, and edge functions. The free tier is sufficient for prototype deployment.
+
+    \item \textbf{Django Server:} A Python-capable server (local machine or cloud VM) for hosting the government data simulator. For production deployment, this would be replaced by the actual government API endpoint.
+
+    \item \textbf{Firebase Project:} A Google Firebase project configured with Cloud Messaging for push notification delivery. A service account JSON key is required for server-side FCM authentication.
+
+    \item \textbf{Application Distribution:} For testing, APK files are distributed directly. For production, the application would be published on the Google Play Store and optionally the Apple App Store.
+
+    \item \textbf{Environment Configuration:} A \texttt{.env} file containing Supabase URL, Supabase anonymous key, and other configuration parameters must be maintained for the Flutter application.
+\end{itemize}

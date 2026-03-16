@@ -1,0 +1,22 @@
+% ──────────────────────────────────────────────
+% ABSTRACT
+% ──────────────────────────────────────────────
+\begin{center}
+{\LARGE \textbf{ABSTRACT}}
+\end{center}
+\addcontentsline{toc}{chapter}{Abstract}
+
+\vspace{1cm}
+
+The Kerala State Civil Supplies Corporation (SupplyCo) operates over 2000 retail outlets across Kerala, distributing essential commodities such as rice, sugar, cooking oil, and pulses to the public at subsidized rates. Despite its critical role in public welfare, citizens currently lack any reliable mechanism to check the availability of stock at their nearest outlet before making a physical visit. This information gap leads to wasted trips, long queues, and unnecessary frustration, disproportionately affecting elderly and rural populations.
+
+This project presents \textbf{MySupplyCo}, an integrated digital platform that provides real-time inventory status information for civil supply outlets through a user-friendly cross-platform mobile application. The system employs a three-layer architecture comprising a government data simulator built with Django and PostgreSQL, a main backend server powered by Supabase (with PostgreSQL, authentication services, and serverless edge functions), and a cross-platform mobile application developed using the Flutter framework.
+
+The platform enables citizens to search for SupplyCo stores by name, filter by district, or discover nearby outlets using GPS-based geolocation. Users can view real-time stock information including item availability, quantity, and pricing. The system features automated push notifications via Firebase Cloud Messaging (FCM) that alert users when out-of-stock items are restocked at their preferred store. A WhatsApp alert subscription interface provides an accessible channel for users less comfortable with mobile applications, particularly elderly citizens.
+
+Key technical features include offline caching for stock data resilience during network disruptions, incremental data synchronization using checkpoint-based polling, database webhook-triggered restock notifications, multi-language localization supporting eight Indian languages (English, Malayalam, Hindi, Gujarati, Marathi, Bengali, Tamil, and Telugu), and secure authentication via OTP-based phone verification and Google OAuth.
+
+The architecture is intentionally designed with a read-only security model, ensuring no direct access to government databases while maintaining data freshness through periodic API-based synchronization. This modular design allows seamless integration with official government APIs when they become available, making the system both a functional prototype and a deployment-ready framework for statewide rollout.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} SupplyCo, Public Distribution System, Real-Time Stock Tracking, Flutter, Supabase, Django, Push Notifications, Multi-Language, Mobile Application, E-Governance

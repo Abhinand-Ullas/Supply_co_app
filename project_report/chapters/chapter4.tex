@@ -1,0 +1,402 @@
+\chapter{Project Design}
+
+\section{Introduction}
+
+\subsection{Purpose}
+
+The purpose of this chapter is to present the detailed design of the MySupplyCo system, including its architecture, database schema, data flow, and user interaction patterns. The design aims to create a secure, scalable, and user-friendly platform that provides real-time stock information from Kerala SupplyCo outlets to citizens through a mobile application.
+
+\subsection{Scope}
+
+The system design encompasses three interconnected components:
+\begin{enumerate}
+    \item A government data simulator that mimics the central SupplyCo database and exposes stock data through a secure REST API.
+    \item A main backend server that synchronizes data from the government source, manages user authentication, and delivers push notifications.
+    \item A cross-platform mobile application that presents stock information to users with offline capability, multi-language support, and location-based store discovery.
+\end{enumerate}
+
+\subsection{Overview}
+
+The MySupplyCo system follows a three-layer architecture where each layer has clearly defined responsibilities and communicates with adjacent layers through well-defined interfaces. This separation of concerns ensures that changes to one layer (such as replacing the government simulator with an actual API) do not require modifications to other layers.
+
+\section{System Architecture}
+
+\subsection{Software Design}
+
+The software design is presented through multiple diagram types that capture different aspects of the system: the overall architecture, entity relationships, use cases, and data flow.
+
+\subsubsection{System Architecture Diagram}
+
+Figure~\ref{fig:architecture} illustrates the three-layer architecture of the MySupplyCo system, showing the components within each layer and the communication protocols between them.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 2cm,
+    box/.style={draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center, font=\small},
+    sysbox/.style={draw, dashed, rounded corners, inner sep=12pt, fill=#1!5},
+    arrow/.style={-{Stealth[length=3mm]}, thick},
+    darrow/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick},
+    label/.style={font=\small\bfseries, fill=white, inner sep=2pt}
+]
+
+% ─── System A: Government Simulator ───
+\node[box, fill=red!15] (django) {Django\\Server};
+\node[box, fill=red!15, right=1.5cm of django] (pgA) {PostgreSQL\\(Govt DB)};
+\node[box, fill=red!15, below=0.6cm of django] (restapi) {REST API\\(API Key Auth)};
+
+\node[sysbox=red, fit=(django)(pgA)(restapi), label=above:{\textbf{System A: Government Data Simulator}}] (sysA) {};
+
+% ─── System B: Main Backend ───
+\node[box, fill=blue!15, below=2.5cm of django] (supadb) {PostgreSQL\\(Supabase DB)};
+\node[box, fill=blue!15, right=1.5cm of supadb] (auth) {Supabase\\Auth};
+\node[box, fill=blue!15, below=0.6cm of supadb] (syncfn) {sync-stock\\Edge Function};
+\node[box, fill=blue!15, below=0.6cm of auth] (pushfn) {send-push\\Edge Function};
+\node[box, fill=orange!15, right=1.5cm of auth] (fcm) {Firebase\\FCM};
+
+\node[sysbox=blue, fit=(supadb)(auth)(syncfn)(pushfn), label=above:{\textbf{System B: Main Backend (Supabase)}}] (sysB) {};
+
+% ─── Mobile App ───
+\node[box, fill=green!15, below=2.5cm of syncfn] (flutter) {Flutter\\Mobile App};
+\node[box, fill=green!15, right=1.5cm of flutter] (cache) {Local Cache\\(SharedPrefs)};
+\node[box, fill=green!15, left=1.5cm of flutter] (gps) {GPS\\Location};
+
+\node[sysbox=green, fit=(flutter)(cache)(gps), label=above:{\textbf{Mobile Application (Flutter)}}] (sysC) {};
+
+% ─── Arrows ───
+\draw[darrow] (django) -- (pgA);
+\draw[arrow] (django) -- (restapi);
+\draw[arrow, red!60] (restapi) -- node[label, right, xshift=2pt] {\footnotesize Sync API} (syncfn);
+\draw[arrow] (syncfn) -- (supadb);
+\draw[darrow] (supadb) -- (pushfn);
+\draw[arrow] (pushfn) -- (fcm);
+\draw[arrow, blue!60] (fcm) -- node[label, right] {\footnotesize Push} ++(0,-2.5) -| (flutter);
+\draw[darrow, green!60] (flutter) -- node[label, right, xshift=2pt] {\footnotesize Supabase API} (supadb);
+\draw[darrow] (flutter) -- (auth);
+\draw[darrow] (flutter) -- (cache);
+\draw[arrow] (gps) -- (flutter);
+
+\end{tikzpicture}
+\caption{System Architecture Diagram of MySupplyCo}
+\label{fig:architecture}
+\end{figure}
+
+\subsubsection{Entity-Relationship Diagram}
+
+Figure~\ref{fig:er_diagram} presents the Entity-Relationship diagram showing the five database tables and their relationships.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    entity/.style={draw, rectangle, minimum width=3.2cm, minimum height=0.8cm, fill=blue!10, font=\small\bfseries},
+    attr/.style={draw, rectangle, minimum width=3.2cm, font=\scriptsize, fill=white, anchor=north},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick},
+    node distance=0.5cm
+]
+
+% ─── stores ───
+\node[entity] (stores) {stores};
+\node[attr, below=0pt of stores] (s1) {id (PK)};
+\node[attr, below=0pt of s1] (s2) {name};
+\node[attr, below=0pt of s2] (s3) {district};
+\node[attr, below=0pt of s3] (s4) {address};
+\node[attr, below=0pt of s4] (s5) {govt\_store\_id};
+
+% ─── items ───
+\node[entity, right=4cm of stores] (items) {items};
+\node[attr, below=0pt of items] (i1) {id (PK)};
+\node[attr, below=0pt of i1] (i2) {name};
+\node[attr, below=0pt of i2] (i3) {unit};
+\node[attr, below=0pt of i3] (i4) {image\_url};
+\node[attr, below=0pt of i4] (i5) {category};
+
+% ─── stock ───
+\node[entity, below=4cm of stores] (stock) at ($(stores)!0.5!(items) + (0,-4.5)$) {stock};
+\node[attr, below=0pt of stock] (st1) {id (PK)};
+\node[attr, below=0pt of st1] (st2) {store\_id (FK)};
+\node[attr, below=0pt of st2] (st3) {item\_id (FK)};
+\node[attr, below=0pt of st3] (st4) {quantity};
+\node[attr, below=0pt of st4] (st5) {price};
+\node[attr, below=0pt of st5] (st6) {status};
+
+% ─── user_details ───
+\node[entity, right=4cm of items] (users) {user\_details};
+\node[attr, below=0pt of users] (u1) {id (PK)};
+\node[attr, below=0pt of u1] (u2) {name};
+\node[attr, below=0pt of u2] (u3) {phone\_number};
+\node[attr, below=0pt of u3] (u4) {email};
+\node[attr, below=0pt of u4] (u5) {selected\_district};
+\node[attr, below=0pt of u5] (u6) {last\_selected\_supplyco (FK)};
+\node[attr, below=0pt of u6] (u7) {fcm\_token};
+\node[attr, below=0pt of u7] (u8) {preferred\_language};
+
+% ─── sync_metadata ───
+\node[entity, below=4.5cm of users] (sync) {sync\_metadata};
+\node[attr, below=0pt of sync] (sm1) {id (PK)};
+\node[attr, below=0pt of sm1] (sm2) {last\_sync};
+
+% ─── Relationships ───
+\draw[arrow] (stock) -- node[left, font=\scriptsize, pos=0.3] {N} node[left, font=\scriptsize, pos=0.8] {1} (s5);
+\draw[arrow] (stock) -- node[right, font=\scriptsize, pos=0.3] {N} node[right, font=\scriptsize, pos=0.8] {1} (i5);
+\draw[arrow] (u6) -| node[below, font=\scriptsize, pos=0.2] {N:1} (s5);
+
+\end{tikzpicture}
+\caption{Entity-Relationship Diagram}
+\label{fig:er_diagram}
+\end{figure}
+
+The database schema consists of the following tables:
+
+\begin{itemize}
+    \item \textbf{stores:} Contains information about each SupplyCo outlet including name, district, address, and the government-assigned store identifier.
+    \item \textbf{items:} Master table of all commodities available across the SupplyCo network, with name, unit of measurement, image URL, and category.
+    \item \textbf{stock:} Junction table that maps stores to items with current quantity, price, and availability status. Uses a composite unique constraint on (store\_id, item\_id) for upsert operations during synchronization.
+    \item \textbf{user\_details:} Stores registered user information including authentication details, preferred district, last visited store, FCM token for push notifications, and language preference.
+    \item \textbf{sync\_metadata:} Maintains the last synchronization timestamp used for incremental data fetching from the government simulator.
+\end{itemize}
+
+\subsubsection{Use Case Diagram}
+
+Figure~\ref{fig:usecase} shows the use case diagram depicting the interactions between system actors and the major functionalities.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    actor/.style={font=\small},
+    usecase/.style={draw, ellipse, minimum width=3cm, minimum height=1cm, align=center, font=\small, fill=yellow!10},
+    arrow/.style={-{Stealth[length=2.5mm]}},
+    node distance=1cm
+]
+
+% ─── Actors ───
+\node[actor] (guest) at (-5, 3) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize Guest User};
+\node[actor] (reg) at (-5, -1) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize Registered User};
+\node[actor] (sys) at (6.5, 1) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize System};
+
+% ─── Use Cases ───
+\node[usecase] (search) at (0.5, 5) {Search Stores};
+\node[usecase] (filter) at (0.5, 3.5) {Filter by District};
+\node[usecase] (nearby) at (0.5, 2) {Find Nearby Stores};
+\node[usecase] (viewstock) at (0.5, 0.5) {View Stock};
+\node[usecase] (register) at (0.5, -1) {Register / Login};
+\node[usecase] (alerts) at (0.5, -2.5) {Subscribe to\\WhatsApp Alerts};
+\node[usecase] (lang) at (0.5, -4) {Change Language};
+
+\node[usecase] (sync) at (4, 5) {Sync Stock Data};
+\node[usecase] (push) at (4, 3.5) {Send Restock\\Notification};
+\node[usecase] (auth) at (4, 2) {Authenticate\\User};
+
+% ─── Connections ───
+\draw[arrow] (guest) -- (search);
+\draw[arrow] (guest) -- (filter);
+\draw[arrow] (guest) -- (nearby);
+\draw[arrow] (guest) -- (viewstock);
+
+\draw[arrow] (reg) -- (search);
+\draw[arrow] (reg) -- (filter);
+\draw[arrow] (reg) -- (nearby);
+\draw[arrow] (reg) -- (viewstock);
+\draw[arrow] (reg) -- (register);
+\draw[arrow] (reg) -- (alerts);
+\draw[arrow] (reg) -- (lang);
+
+\draw[arrow] (sys) -- (sync);
+\draw[arrow] (sys) -- (push);
+\draw[arrow] (sys) -- (auth);
+
+\end{tikzpicture}
+\caption{Use Case Diagram}
+\label{fig:usecase}
+\end{figure}
+
+\subsubsection{Data Flow Diagram}
+
+Figure~\ref{fig:dataflow} illustrates the data flow through the system, showing how stock data moves from the government source to the end user.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    process/.style={draw, circle, minimum size=1.8cm, align=center, font=\scriptsize, fill=blue!10},
+    store/.style={draw, rectangle, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\scriptsize, fill=green!10},
+    ext/.style={draw, rectangle, minimum width=2.2cm, minimum height=0.7cm, align=center, font=\scriptsize, fill=red!10},
+    flow/.style={-{Stealth[length=2.5mm]}, thick},
+    node distance=2cm
+]
+
+% External entities
+\node[ext] (govt) at (0, 4) {Govt Database\\(Django)};
+\node[ext] (user) at (0, -4) {Mobile User};
+\node[ext] (fcm_ext) at (7, 0) {Firebase\\FCM};
+
+% Processes
+\node[process] (p1) at (0, 2) {1.0\\Sync\\Stock};
+\node[process] (p2) at (0, 0) {2.0\\Serve\\Data};
+\node[process] (p3) at (0, -2) {3.0\\Display\\Stock};
+\node[process] (p4) at (4, 2) {4.0\\Detect\\Restock};
+\node[process] (p5) at (4, 0) {5.0\\Send\\Push};
+
+% Data stores
+\node[store] (ds1) at (-4, 1) {D1: Stock\\Table};
+\node[store] (ds2) at (-4, -1) {D2: User\\Details};
+\node[store] (ds3) at (4, -2.5) {D3: Local\\Cache};
+
+% Flows
+\draw[flow] (govt) -- node[right, font=\scriptsize] {API Data} (p1);
+\draw[flow] (p1) -- node[left, font=\scriptsize] {Stock} (ds1);
+\draw[flow] (ds1) -- node[above, font=\scriptsize] {Stock Data} (p2);
+\draw[flow] (p2) -- node[left, font=\scriptsize] {JSON} (p3);
+\draw[flow] (p3) -- node[left, font=\scriptsize] {UI} (user);
+\draw[flow] (p1) -| node[above, font=\scriptsize, pos=0.3] {Change} (p4);
+\draw[flow] (p4) -- (p5);
+\draw[flow] (ds2) -- node[above, font=\scriptsize] {FCM Tokens} (p5);
+\draw[flow] (p5) -- node[above, font=\scriptsize] {Notification} (fcm_ext);
+\draw[flow] (fcm_ext) |- node[right, font=\scriptsize, pos=0.7] {Push} (user);
+\draw[flow] (p3) -| node[below, font=\scriptsize, pos=0.3] {Cache} (ds3);
+
+\end{tikzpicture}
+\caption{Data Flow Diagram}
+\label{fig:dataflow}
+\end{figure}
+
+\subsubsection{Application Navigation Flow}
+
+Figure~\ref{fig:appflow} presents the screen navigation flow of the mobile application, showing the possible transitions between different screens based on user state (first-time, returning, guest, or authenticated).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    screen/.style={draw, rounded corners, minimum width=2.2cm, minimum height=0.8cm, align=center, font=\scriptsize, fill=green!10},
+    decision/.style={draw, diamond, minimum width=1.5cm, minimum height=1cm, align=center, font=\scriptsize, fill=yellow!10, aspect=2},
+    flow/.style={-{Stealth[length=2.5mm]}, thick},
+    node distance=1.2cm
+]
+
+\node[screen, fill=blue!15] (splash) {Splash\\Screen};
+\node[decision, below=1cm of splash] (first) {First\\Time?};
+\node[screen, left=2cm of first] (onboard) {Get Started\\(Onboarding)};
+\node[screen, right=2cm of first] (authwrap) {Auth\\Wrapper};
+
+\node[decision, below=1cm of onboard] (choice) {User\\Choice?};
+\node[screen, below left=1cm and 0.5cm of choice] (guest) {Guest\\Mode};
+\node[screen, below right=1cm and 0.5cm of choice] (authpage) {Auth\\Page};
+
+\node[decision, below=1cm of authwrap] (logged) {Logged\\In?};
+
+\node[screen, fill=green!20, below=3.5cm of first] (home) {Home\\Page};
+
+\node[screen, below left=1cm and 1cm of home] (stock) {Stock\\Page};
+\node[screen, below=1cm of home] (profile) {Profile \&\\Settings};
+\node[screen, below right=1cm and 1cm of home] (whatsapp) {WhatsApp\\Alerts};
+
+% Flows
+\draw[flow] (splash) -- (first);
+\draw[flow] (first) -- node[above, font=\scriptsize] {Yes} (onboard);
+\draw[flow] (first) -- node[above, font=\scriptsize] {No} (authwrap);
+\draw[flow] (onboard) -- (choice);
+\draw[flow] (choice) -- node[left, font=\scriptsize] {Guest} (guest);
+\draw[flow] (choice) -- node[right, font=\scriptsize] {Login} (authpage);
+\draw[flow] (guest) |- (home);
+\draw[flow] (authpage) |- (home);
+\draw[flow] (authwrap) -- (logged);
+\draw[flow] (logged) |- node[right, font=\scriptsize, pos=0.3] {Yes / Guest} (home);
+\draw[flow] (logged) -| node[above, font=\scriptsize] {No} (authpage);
+\draw[flow] (home) -- (stock);
+\draw[flow] (home) -- (profile);
+\draw[flow] (home) -- (whatsapp);
+
+\end{tikzpicture}
+\caption{Application Navigation Flow}
+\label{fig:appflow}
+\end{figure}
+
+\subsection{Architectural Overview}
+
+The following subsections provide a detailed description of each architectural layer and its internal components.
+
+\subsubsection{System A: Government Data Simulator}
+
+The government data simulator serves as a prototype representation of the central SupplyCo database infrastructure. In a real-world deployment, this would be replaced by the actual government API.
+
+\textbf{Technology Stack:}
+\begin{itemize}
+    \item \textbf{Framework:} Django 4.x with Django REST Framework
+    \item \textbf{Database:} PostgreSQL 15+
+    \item \textbf{Authentication:} API Key-based authentication via custom HTTP headers (\texttt{X-API-KEY})
+\end{itemize}
+
+\textbf{API Endpoint:}
+The simulator exposes a single REST endpoint that accepts a \texttt{last\_sync\_time} query parameter and returns all stock records modified after that timestamp. This enables incremental synchronization, where only changed records are transferred during each sync cycle.
+
+\textbf{Data Model:}
+The simulator maintains its own set of stores, items, and stock records, simulating the data structure of the real SupplyCo central database. Stock quantities and prices are periodically updated to simulate real-world inventory changes.
+
+\subsubsection{System B: Main Backend Server (Supabase)}
+
+The main backend serves as the intermediary between the government data source and the mobile application. It is built on Supabase, an open-source Backend-as-a-Service platform.
+
+\textbf{Components:}
+
+\begin{enumerate}
+    \item \textbf{PostgreSQL Database:} Hosts five tables (stores, items, stock, user\_details, sync\_metadata) as described in the ER diagram. Row Level Security (RLS) policies ensure that users can only access their own profile data while stock and store data is publicly readable.
+
+    \item \textbf{Supabase Auth:} Manages user authentication through two providers:
+    \begin{itemize}
+        \item \textbf{Phone OTP:} Users receive a one-time password via SMS to their registered mobile number.
+        \item \textbf{Google OAuth:} Users can sign in using their Google account through OAuth 2.0 flow with deep link callback (\texttt{supplyco://login-callback/}).
+    \end{itemize}
+
+    \item \textbf{Edge Function --- sync-stock:} A serverless Deno function that:
+    \begin{itemize}
+        \item Reads the last sync timestamp from the \texttt{sync\_metadata} table.
+        \item Calls the Django API with the timestamp to fetch only modified records.
+        \item Upserts the received data into the \texttt{stock} table using the composite key (store\_id, item\_id).
+        \item Updates the sync checkpoint timestamp.
+    \end{itemize}
+
+    \item \textbf{Edge Function --- send-push:} A serverless Deno function triggered by a database webhook when the \texttt{stock} table is updated. It:
+    \begin{itemize}
+        \item Compares old and new stock quantities to detect restock events (quantity changing from 0 to a positive value).
+        \item Queries the item name, store name, and affected user FCM tokens.
+        \item Authenticates with Firebase using a service account JWT.
+        \item Sends personalized push notifications via the FCM v1 API.
+    \end{itemize}
+
+    \item \textbf{RPC Function --- get\_nearby\_stores:} A PostgreSQL stored procedure that accepts latitude and longitude parameters and returns stores ordered by geographical distance, leveraging PostGIS spatial functions.
+\end{enumerate}
+
+\subsubsection{Mobile Application (Flutter)}
+
+The mobile application is the citizen-facing component of the system, built using the Flutter framework for cross-platform compatibility.
+
+\textbf{Architecture Pattern:}
+The application follows a service-oriented architecture with a clear separation between UI components and business logic:
+
+\begin{itemize}
+    \item \textbf{UI Layer:} Composed of screen widgets organized into three categories:
+    \begin{itemize}
+        \item \texttt{intro\_pages/} --- Splash screen, onboarding, and authentication screens.
+        \item \texttt{core\_pages/} --- Home page (store listing) and stock page (item inventory view).
+        \item \texttt{other\_pages/} --- Settings, alerts, help, privacy policy, and terms pages.
+    \end{itemize}
+
+    \item \textbf{Services Layer:} Five service classes that encapsulate all business logic:
+    \begin{itemize}
+        \item \texttt{SupabaseService} --- Centralized data access layer for all database operations (fetch stores, fetch stock, manage user details, nearby store queries).
+        \item \texttt{NotificationService} --- Manages FCM token registration, permission requests, and token refresh handling.
+        \item \texttt{LocationService} --- Handles GPS permission management and current position retrieval.
+        \item \texttt{StorageService} --- Local persistence via SharedPreferences including offline stock caching, onboarding state, guest mode, and language preferences.
+        \item \texttt{LocalizationProvider} --- ChangeNotifier-based provider for reactive runtime language switching across eight supported locales.
+    \end{itemize}
+
+    \item \textbf{Localization Layer:} Application Resource Bundle (ARB) files define translated strings for all eight languages. Flutter's code generation system produces Dart classes for type-safe access to localized strings.
+\end{itemize}
+
+\textbf{Key Design Decisions:}
+
+\begin{enumerate}
+    \item \textbf{Guest Mode:} The application allows full read-only access without authentication, lowering the barrier to entry. Registered users gain access to push notifications and WhatsApp alert subscriptions.
+
+    \item \textbf{Offline-First Stock Display:} When opening a previously visited store, cached stock data is displayed immediately while a fresh fetch occurs in the background. If the network request fails, the cached data remains visible with a clear ``Offline'' banner and timestamp.
+
+    \item \textbf{Provider Pattern for State Management:} The Provider package is used for dependency injection and state management, following Flutter's recommended approach for applications of this scale.
+\end{enumerate}
