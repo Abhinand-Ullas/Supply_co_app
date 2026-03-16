@@ -1453,6 +1453,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'⚠ Last Updated: March 2026. These Terms and Conditions apply to all users of the MySupplyCo application. By using this application, you acknowledge that you have read, understood, and agree to be bound by these terms.'**
   String get termsFooterNote;
+
+  /// No description provided for @accessibilityPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get accessibilityPageTitle;
+
+  /// No description provided for @colourBlindFriendly.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour Blind Friendly'**
+  String get colourBlindFriendly;
 }
 
 class _AppLocalizationsDelegate

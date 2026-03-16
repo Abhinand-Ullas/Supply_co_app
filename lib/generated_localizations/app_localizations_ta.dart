@@ -769,4 +769,10 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get termsFooterNote =>
       '⚠ கடைசியாகப் புதுப்பிக்கப்பட்டது: மார்ச் 2026. இந்த விதிமுறைகள் மற்றும் நிபந்தனைகள் MySupplyCo பயன்பாட்டின் அனைத்து பயனர்களுக்கும் பொருந்தும். இந்த பயன்பாட்டைப் பயன்படுத்துவதன் மூலம், இந்த விதிமுறைகளை நீங்கள் படித்து, புரிந்துகொண்டு, அவற்றுக்குக் கட்டுப்பட ஒப்புக்கொள்கிறீர்கள் என்பதை உறுதிப்படுத்துகிறீர்கள்.';
+
+  @override
+  String get accessibilityPageTitle => 'Accessibility';
+
+  @override
+  String get colourBlindFriendly => 'வண்ண குருட்டு நட்பு';
 }

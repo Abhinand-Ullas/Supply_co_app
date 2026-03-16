@@ -757,4 +757,10 @@ class AppLocalizationsGu extends AppLocalizations {
   @override
   String get termsFooterNote =>
       '⚠ છેલ્લો અપ્ડેટ: માર્ચ 2026. આ શરતો mySupplyCO એપલીકેશન તમામ વપરાશી હવે લાગુ. આ એપલીકેશન ઉપયોગ કરીને, તમે માન્ય છો કે તમે આ શરતો વાંચી, સમજ્યો, અને તમે બંધ મર્યાદા.';
+
+  @override
+  String get accessibilityPageTitle => 'સુલભતા';
+
+  @override
+  String get colourBlindFriendly => 'રંગ અંધતા અનુકૂળ';
 }

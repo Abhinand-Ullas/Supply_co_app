@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supply_co/generated_localizations/app_localizations.dart';
 
 class AccessibilityPage extends StatelessWidget {
   const AccessibilityPage({super.key});
@@ -30,6 +31,8 @@ class _AccessibilityDialogState extends State<_AccessibilityDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Dialog(
       elevation: 8,
       backgroundColor: Colors.white,
@@ -58,9 +61,9 @@ class _AccessibilityDialogState extends State<_AccessibilityDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Accessibility',
-                    style: TextStyle(
+                  Text(
+                    l10n.accessibilityPageTitle,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
@@ -86,9 +89,9 @@ class _AccessibilityDialogState extends State<_AccessibilityDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Colour Blind Friendly',
-                    style: TextStyle(
+                  Text(
+                    l10n.colourBlindFriendly,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1A1A1A),

@@ -759,4 +759,10 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get termsFooterNote =>
       '⚠ अंतिम अपडेट: मार्च 2026। ये शर्तें और शर्तें mySupplyCO एप्लिकेशन के सभी उपयोगकर्ताओं पर लागू होती हैं। इस एप्लिकेशन का उपयोग करके, आप स्वीकार करते हैं कि आपने इन शर्तों को पढ़ा है, समझा है और उनसे बंधे होने के लिए सहमत हैं।';
+
+  @override
+  String get accessibilityPageTitle => 'सुलभता';
+
+  @override
+  String get colourBlindFriendly => 'रंग अंधापन अनुकूल';
 }

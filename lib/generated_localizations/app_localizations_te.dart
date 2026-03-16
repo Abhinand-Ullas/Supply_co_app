@@ -765,4 +765,10 @@ class AppLocalizationsTe extends AppLocalizations {
   @override
   String get termsFooterNote =>
       '⚠ చివరిగా నవీకరించిన: మార్చి 2026. ఈ నిబంధనలు mySupplyCO అప్లికేషన్ యొక్క సమస్త వినియోగదారులకు వర్తిస్తాయి. ఈ అప్లికేషన్‌ను ఉపయోగించడం ద్వారా, మీరు ఈ నిబంధనలను చదివినట్లు, అర్థం చేసుకున్నట్లు మరియు పాలనకు సమ్మతి చెప్తారు.';
+
+  @override
+  String get accessibilityPageTitle => 'యాక్సెస్‌విలిటీ';
+
+  @override
+  String get colourBlindFriendly => 'రంగు గుడ్డి స్నేహపూర్వక';
 }

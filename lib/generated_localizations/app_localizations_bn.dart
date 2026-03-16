@@ -761,4 +761,10 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get termsFooterNote =>
       '⚠ সর্বশেষ আপডেট: মার্চ 2026। এই শর্তাবলী MySupplyCO অ্যাপ্লিকেশনের সমস্ত ব্যবহারকারীর জন্য প্রযোজ্য। এই অ্যাপ্লিকেশন ব্যবহার করে, আপনি স্বীকার করেন যে আপনি এই শর্তাবলী পড়েছেন, বুঝেছেন এবং দ্বারা আবদ্ধ হতে সম্মত হন।';
+
+  @override
+  String get accessibilityPageTitle => 'অ্যাক্সেসযোগ্যতা';
+
+  @override
+  String get colourBlindFriendly => 'রঙ অন্ধত্ব বান্ধব';
 }
