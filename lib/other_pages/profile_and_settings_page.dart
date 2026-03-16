@@ -274,14 +274,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                 icon: Icons.accessibility_new_outlined,
                 iconColor: const Color(0xFF1A5C2A),
                 label: AppLocalizations.of(context)!.accessibility,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AccessibilityPage(),
-                    ),
-                  );
-                },
+                onTap: () => AccessibilityPage.showAsDialog(context),
               ),
             ]),
 
@@ -352,7 +345,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         border: Border.all(color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -388,7 +381,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         border: Border.all(color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
