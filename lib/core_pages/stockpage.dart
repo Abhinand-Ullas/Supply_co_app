@@ -25,13 +25,13 @@ class StockPage extends StatefulWidget {
 }
 
 class _StockPageState extends State<StockPage> with SingleTickerProviderStateMixin {
-  static const _brandGreen    = Color(0xFF1B4D3E);
-  static const _accentGreen   = Color(0xFF2E7D52);
-  static const _lightGreen    = Color(0xFFE8F5E9);
-  static const _bgCream       = Color(0xFFF8F6F2);
-  static const _cardWhite     = Color(0xFFFFFFFF);
-  static const _priceGreen    = Color(0xFF1E8C2F);
-  static const _unavailableRed= Color(0xFFD32F2F);
+  static const _brandGreen     = Color(0xFF1B4D3E);
+  static const _accentGreen    = Color(0xFF2E7D52);
+  static const _lightGreen     = Color(0xFFE8F5E9);
+  static const _bgCream        = Color(0xFFF8F6F2);
+  static const _cardWhite      = Color(0xFFFFFFFF);
+  static const _priceGreen     = Color(0xFF1E8C2F);
+  static const _unavailableRed = Color(0xFFD32F2F);
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
@@ -148,7 +148,10 @@ class _StockPageState extends State<StockPage> with SingleTickerProviderStateMix
           icon: const Icon(Icons.refresh_rounded),
           tooltip: 'Refresh',
           onPressed: () {
-            setState(() { _isLoading = true; _errorMessage = null; });
+            setState(() {
+              _isLoading = true;
+              _errorMessage = null;
+            });
             _fetchFreshStock();
           },
         ),
@@ -237,7 +240,7 @@ class _StockPageState extends State<StockPage> with SingleTickerProviderStateMix
 
   Widget _buildBody() {
     if (!_isStockSelected) {
-      return _buildEmptySpecial();
+      return _buildSpecialTab();
     }
 
     if (_isLoading && _stock.isEmpty) {
@@ -294,10 +297,9 @@ class _StockPageState extends State<StockPage> with SingleTickerProviderStateMix
             ],
           ),
         ),
-
         Expanded(
           child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20), // ← top 14 added
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
             itemCount: filtered.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -318,19 +320,18 @@ class _StockPageState extends State<StockPage> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildEmptySpecial() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.local_offer_outlined, size: 56, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          const Text('No special items right now',
-              style: TextStyle(color: Color(0xFF999999), fontSize: 15)),
-          const SizedBox(height: 4),
-          const Text('Check back later for offers',
-              style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 12)),
+  Widget _buildSpecialTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: _NotificationCard(
+        title: 'Special Sugar Offer — February 14',
+        body:
+            'Kerala State Civil Supplies Corporation (Supplyco) is selling sugar at ₹14 per kg on February 14.',
+        tiers: const [
+          _OfferTier(condition: 'Purchase above ₹1,000', benefit: '1 kg sugar at ₹14'),
+          _OfferTier(condition: 'Purchase above ₹500', benefit: '500 g sugar at ₹14'),
         ],
+        note: 'Applicable on non-subsidised products only.',
       ),
     );
   }
@@ -374,6 +375,156 @@ class _StockPageState extends State<StockPage> with SingleTickerProviderStateMix
 }
 
 // ─────────────────────────────────────────────
+//  Notification Card & Offer Tier
+// ─────────────────────────────────────────────
+class _OfferTier {
+  final String condition;
+  final String benefit;
+  const _OfferTier({required this.condition, required this.benefit});
+}
+
+class _NotificationCard extends StatelessWidget {
+  final String title;
+  final String body;
+  final List<_OfferTier> tiers;
+  final String note;
+
+  const _NotificationCard({
+    required this.title,
+    required this.body,
+    required this.tiers,
+    required this.note,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.campaign_outlined, size: 16, color: Color(0xFF1B4D3E)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+            const Divider(height: 1, color: Color(0xFFF0F0F0)),
+            const SizedBox(height: 10),
+
+            // Body text
+            Text(
+              body,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF555555),
+                height: 1.5,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Eligibility tiers
+            ...tiers.map(
+              (tier) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '•',
+                      style: TextStyle(color: Color(0xFF1B4D3E), fontSize: 13),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF555555),
+                            height: 1.4,
+                          ),
+                          children: [
+                            TextSpan(text: '${tier.condition} — '),
+                            TextSpan(
+                              text: tier.benefit,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Note
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 12, color: Color(0xFF888888)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      note,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF777777),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
 //  Stock Card Widget
 // ─────────────────────────────────────────────
 class _StockCard extends StatelessWidget {
@@ -404,8 +555,7 @@ class _StockCard extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
           BoxShadow(
-            color: (isAvailable ? brandGreen : Colors.grey)
-                .withValues(alpha: .18),
+            color: (isAvailable ? brandGreen : Colors.grey).withValues(alpha: .18),
             blurRadius: 6,
             spreadRadius: 1,
             offset: Offset.zero,
@@ -417,7 +567,6 @@ class _StockCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
             Align(
               alignment: Alignment.topLeft,
               child: Container(
@@ -449,7 +598,6 @@ class _StockCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -545,9 +693,7 @@ class _StockCard extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              isAvailable
-                                  ? Icons.check_rounded
-                                  : Icons.close_rounded,
+                              isAvailable ? Icons.check_rounded : Icons.close_rounded,
                               size: 10,
                               color: isAvailable
                                   ? const Color(0xFF2E7D32)
@@ -558,11 +704,9 @@ class _StockCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -594,7 +738,10 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 5),
-          Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
