@@ -127,43 +127,27 @@ class _GetStartedState extends State<GetStarted>
 
               const SizedBox(height: 32),
 
-              // ── Logo ──────────────────────────────────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.black12, width: 1.5),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Image.asset(
-                    'lib/images/logo.png',
-                    width: 190,
-                    height: 190,
-                    fit: BoxFit.cover,
+              // ── Logo (fade in animation) ──────────────────────────────────
+              FadeTransition(
+                opacity: _titleOpacity,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.black12, width: 1.5),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Image.asset(
+                      'lib/images/get_started.png',
+                      width: 280,
+                      height: 280,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 20),
-
-              // ── Title (delayed fade + slide up) ───────────────────────────
-              FadeTransition(
-                opacity: _titleOpacity,
-                child: SlideTransition(
-                  position: _titleSlide,
-                  child: const Text(
-                    'Check Before You Go',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      fontStyle: FontStyle.italic,
-                      color: _green,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 36),
 
