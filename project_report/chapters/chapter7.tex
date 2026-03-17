@@ -7,20 +7,18 @@ The MySupplyCo project successfully demonstrates a comprehensive approach to dig
 The key contributions of this project are:
 
 \begin{enumerate}
-    \item \textbf{A Secure Three-Layer Architecture:} We designed and implemented a three-layer system architecture that provides real-time stock information to citizens without requiring any modification to existing government IT infrastructure. The read-only intermediary model ensures data security while enabling data freshness through periodic API-based synchronization.
+    \item \textbf{A Secure Three-Layer Architecture:} A three-layer system that provides real-time stock information without requiring modification to existing government IT infrastructure, ensuring data security through a read-only intermediary model.
 
-    \item \textbf{Real-Time Stock Visibility:} The mobile application provides citizens with current stock levels, pricing, and availability status for commodities at any SupplyCo outlet in Kerala. The automated synchronization mechanism ensures that displayed information reflects the most recent state of outlet inventory.
+    \item \textbf{Real-Time Stock Visibility:} Citizens can access current stock levels, pricing, and availability status for commodities at any SupplyCo outlet in Kerala through automated synchronization.
 
-    \item \textbf{Proactive Restock Notifications:} The database webhook-triggered push notification system alerts users within seconds when previously out-of-stock items become available at their preferred store, enabling timely purchases and reducing the need for repeated manual checking.
+    \item \textbf{Proactive Restock Notifications:} A webhook-triggered push notification system alerts users when previously out-of-stock items become available at their preferred store.
 
-    \item \textbf{Inclusive Design:} The platform addresses digital divide concerns through multiple mechanisms: guest mode access without registration barriers, eight-language localization for linguistic accessibility, offline caching for connectivity-challenged areas, and a WhatsApp alert interface for users less comfortable with dedicated mobile applications.
+    \item \textbf{Inclusive Design:} Guest mode access, eight-language localization, offline caching, and WhatsApp alert integration address digital divide concerns across diverse user populations.
 
-    \item \textbf{Scalable and Modular Framework:} The architecture is designed for seamless transition from prototype to production deployment. The government simulator can be replaced by an actual government API by modifying only the synchronization layer, while the mobile application and main backend remain unchanged.
+    \item \textbf{Scalable and Modular Framework:} The government simulator can be replaced by an actual government API by modifying only the synchronization layer, enabling seamless transition from prototype to production.
 \end{enumerate}
 
-The project demonstrates that modern software engineering practices --- including serverless computing, event-driven architecture, cross-platform development, and Backend-as-a-Service platforms --- can be effectively applied to create citizen-centric government services that are both technically robust and accessible to diverse user populations.
-
-In essence, MySupplyCo represents a meaningful step towards transparent, efficient, and equitable public service delivery. The platform empowers citizens with information, reduces wasted effort, and provides a foundation for data-driven improvements in public distribution operations. By bridging the gap between government infrastructure and citizen needs, this project contributes to the broader vision of Digital India and Kerala's e-governance initiatives.
+In essence, MySupplyCo represents a meaningful step towards transparent, efficient, and equitable public service delivery, contributing to the broader vision of Digital India and Kerala's e-governance initiatives.
 
 \section{Future Scope}
 
@@ -44,8 +42,5 @@ The MySupplyCo platform is designed as an extensible framework with several aven
     \item \textbf{Cross-State Expansion:} The three-layer architecture pattern can be replicated for other states with public distribution networks similar to Kerala's SupplyCo. By developing state-specific data simulators and configuring the sync layer for each state's data format, the platform could serve as a national-level citizen service for PDS stock visibility.
 
     \item \textbf{Analytics Dashboard for Administrators:} A web-based analytics dashboard for SupplyCo administrators could provide insights into citizen demand patterns, outlet-level stock utilization rates, and notification engagement metrics. This data-driven visibility would enable better procurement planning and resource allocation.
-
-    \item \textbf{Price Comparison and Route Optimization:} Future iterations could include price comparison across nearby stores and optimal route suggestions for users who need to visit multiple outlets to fulfill their requirements, integrating with mapping services for turn-by-turn navigation.
 \end{itemize}
 
-These future enhancements would transform MySupplyCo from a stock visibility application into a comprehensive digital ecosystem for public distribution management, benefiting citizens, administrators, and policymakers alike.

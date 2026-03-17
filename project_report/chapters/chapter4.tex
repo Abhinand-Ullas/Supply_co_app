@@ -32,49 +32,48 @@ Figure~\ref{fig:architecture} illustrates the three-layer architecture of the My
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=1.2cm and 2cm,
-    box/.style={draw, rounded corners, minimum width=3cm, minimum height=1cm, align=center, font=\small},
-    sysbox/.style={draw, dashed, rounded corners, inner sep=12pt, fill=#1!5},
-    arrow/.style={-{Stealth[length=3mm]}, thick},
-    darrow/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick},
-    label/.style={font=\small\bfseries, fill=white, inner sep=2pt}
+    box/.style={draw, rounded corners, minimum width=2.4cm, minimum height=0.8cm, align=center, font=\scriptsize},
+    sysbox/.style={draw, dashed, rounded corners, inner sep=8pt, fill=#1!5},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick},
+    darrow/.style={{Stealth[length=2.5mm]}-{Stealth[length=2.5mm]}, thick},
+    lbl/.style={font=\scriptsize, fill=white, inner sep=1pt}
 ]
 
 % ─── System A: Government Simulator ───
-\node[box, fill=red!15] (django) {Django\\Server};
-\node[box, fill=red!15, right=1.5cm of django] (pgA) {PostgreSQL\\(Govt DB)};
-\node[box, fill=red!15, below=0.6cm of django] (restapi) {REST API\\(API Key Auth)};
+\node[box, fill=red!15] (django) {Django Server};
+\node[box, fill=red!15, right=0.8cm of django] (pgA) {PostgreSQL\\(Govt DB)};
+\node[box, fill=red!15, below=0.5cm of django] (restapi) {REST API\\(API Key Auth)};
 
-\node[sysbox=red, fit=(django)(pgA)(restapi), label=above:{\textbf{System A: Government Data Simulator}}] (sysA) {};
+\node[sysbox=red, fit=(django)(pgA)(restapi), label=above:{\scriptsize\textbf{System A: Government Data Simulator}}] (sysA) {};
 
 % ─── System B: Main Backend ───
-\node[box, fill=blue!15, below=2.5cm of django] (supadb) {PostgreSQL\\(Supabase DB)};
-\node[box, fill=blue!15, right=1.5cm of supadb] (auth) {Supabase\\Auth};
-\node[box, fill=blue!15, below=0.6cm of supadb] (syncfn) {sync-stock\\Edge Function};
-\node[box, fill=blue!15, below=0.6cm of auth] (pushfn) {send-push\\Edge Function};
-\node[box, fill=orange!15, right=1.5cm of auth] (fcm) {Firebase\\FCM};
+\node[box, fill=blue!15, below=2cm of django] (supadb) {PostgreSQL\\(Supabase DB)};
+\node[box, fill=blue!15, right=0.8cm of supadb] (auth) {Supabase Auth};
+\node[box, fill=blue!15, below=0.5cm of supadb] (syncfn) {sync-stock\\Edge Function};
+\node[box, fill=blue!15, below=0.5cm of auth] (pushfn) {send-push\\Edge Function};
+\node[box, fill=orange!15, right=0.8cm of auth] (fcm) {Firebase FCM};
 
-\node[sysbox=blue, fit=(supadb)(auth)(syncfn)(pushfn), label=above:{\textbf{System B: Main Backend (Supabase)}}] (sysB) {};
+\node[sysbox=blue, fit=(supadb)(auth)(syncfn)(pushfn)(fcm), label=above:{\scriptsize\textbf{System B: Main Backend (Supabase + FCM)}}] (sysB) {};
 
 % ─── Mobile App ───
-\node[box, fill=green!15, below=2.5cm of syncfn] (flutter) {Flutter\\Mobile App};
-\node[box, fill=green!15, right=1.5cm of flutter] (cache) {Local Cache\\(SharedPrefs)};
-\node[box, fill=green!15, left=1.5cm of flutter] (gps) {GPS\\Location};
+\node[box, fill=green!15, below=2cm of syncfn] (flutter) {Flutter\\Mobile App};
+\node[box, fill=green!15, right=0.8cm of flutter] (cache) {Local Cache\\(SharedPrefs)};
+\node[box, fill=green!15, left=0.8cm of flutter] (gps) {GPS Location};
 
-\node[sysbox=green, fit=(flutter)(cache)(gps), label=above:{\textbf{Mobile Application (Flutter)}}] (sysC) {};
+\node[sysbox=green, fit=(flutter)(cache)(gps), label=above:{\scriptsize\textbf{Mobile Application (Flutter)}}] (sysC) {};
 
-% ─── Arrows ───
-\draw[darrow] (django) -- (pgA);
-\draw[arrow] (django) -- (restapi);
-\draw[arrow, red!60] (restapi) -- node[label, right, xshift=2pt] {\footnotesize Sync API} (syncfn);
-\draw[arrow] (syncfn) -- (supadb);
-\draw[darrow] (supadb) -- (pushfn);
-\draw[arrow] (pushfn) -- (fcm);
-\draw[arrow, blue!60] (fcm) -- node[label, right] {\footnotesize Push} ++(0,-2.5) -| (flutter);
-\draw[darrow, green!60] (flutter) -- node[label, right, xshift=2pt] {\footnotesize Supabase API} (supadb);
-\draw[darrow] (flutter) -- (auth);
-\draw[darrow] (flutter) -- (cache);
-\draw[arrow] (gps) -- (flutter);
+% ─── Arrows with labels ───
+\draw[darrow] (django) -- node[lbl, above] {Read/Write} (pgA);
+\draw[arrow] (django) -- node[lbl, right] {Expose} (restapi);
+\draw[arrow, red!60] (restapi) -- node[lbl, right] {Sync API} (syncfn);
+\draw[arrow] (syncfn) -- node[lbl, above] {Upsert} (supadb);
+\draw[darrow] (supadb) -- node[lbl, above] {Webhook} (pushfn);
+\draw[arrow] (pushfn) -- node[lbl, above] {Notify} (fcm);
+\draw[arrow, blue!60] (fcm) |- node[lbl, right, pos=0.3] {Push} (flutter);
+\draw[darrow, green!60] (flutter) -- node[lbl, left] {Supabase API} (supadb);
+\draw[darrow] (flutter) -- node[lbl, right] {OAuth/OTP} (auth);
+\draw[darrow] (flutter) -- node[lbl, above] {Cache} (cache);
+\draw[arrow] (gps) -- node[lbl, above] {Location} (flutter);
 
 \end{tikzpicture}
 \caption{System Architecture Diagram of MySupplyCo}
@@ -83,62 +82,96 @@ Figure~\ref{fig:architecture} illustrates the three-layer architecture of the My
 
 \subsubsection{Entity-Relationship Diagram}
 
-Figure~\ref{fig:er_diagram} presents the Entity-Relationship diagram showing the five database tables and their relationships.
+Figure~\ref{fig:er_diagram} presents the Entity-Relationship diagram showing the seven database tables and their relationships.
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    entity/.style={draw, rectangle, minimum width=3.2cm, minimum height=0.8cm, fill=blue!10, font=\small\bfseries},
-    attr/.style={draw, rectangle, minimum width=3.2cm, font=\scriptsize, fill=white, anchor=north},
-    arrow/.style={-{Stealth[length=2.5mm]}, thick},
-    node distance=0.5cm
+    entity/.style={draw, rectangle, minimum width=2.8cm, minimum height=0.6cm, fill=blue!10, font=\scriptsize\bfseries},
+    attr/.style={draw, rectangle, minimum width=2.8cm, font=\tiny, fill=white, anchor=north},
+    arrow/.style={-{Stealth[length=2mm]}, thick},
+    node distance=0cm
 ]
 
-% ─── stores ───
-\node[entity] (stores) {stores};
-\node[attr, below=0pt of stores] (s1) {id (PK)};
-\node[attr, below=0pt of s1] (s2) {name};
-\node[attr, below=0pt of s2] (s3) {district};
-\node[attr, below=0pt of s3] (s4) {address};
-\node[attr, below=0pt of s4] (s5) {govt\_store\_id};
+% ─── Row 1: stores (left), stock (center), items (right) ───
 
-% ─── items ───
-\node[entity, right=4cm of stores] (items) {items};
-\node[attr, below=0pt of items] (i1) {id (PK)};
-\node[attr, below=0pt of i1] (i2) {name};
-\node[attr, below=0pt of i2] (i3) {unit};
-\node[attr, below=0pt of i3] (i4) {image\_url};
-\node[attr, below=0pt of i4] (i5) {category};
+% stores
+\node[entity] (stores) at (0, 0) {stores};
+\node[attr, below=0pt of stores] (s1) {id : int8 (PK)};
+\node[attr, below=0pt of s1] (s2) {govt\_store\_id : text};
+\node[attr, below=0pt of s2] (s3) {name : text};
+\node[attr, below=0pt of s3] (s4) {district : text};
+\node[attr, below=0pt of s4] (s5) {address : text};
+\node[attr, below=0pt of s5] (s6) {location : geography};
+\node[attr, below=0pt of s6] (s7) {is\_active : bool};
 
-% ─── stock ───
-\node[entity, below=4cm of stores] (stock) at ($(stores)!0.5!(items) + (0,-4.5)$) {stock};
-\node[attr, below=0pt of stock] (st1) {id (PK)};
-\node[attr, below=0pt of st1] (st2) {store\_id (FK)};
-\node[attr, below=0pt of st2] (st3) {item\_id (FK)};
-\node[attr, below=0pt of st3] (st4) {quantity};
-\node[attr, below=0pt of st4] (st5) {price};
-\node[attr, below=0pt of st5] (st6) {status};
+% stock (center, between stores and items)
+\node[entity] at (5, 0) (stock) {stock};
+\node[attr, below=0pt of stock] (st1) {id : int8 (PK)};
+\node[attr, below=0pt of st1] (st2) {store\_id : int8 (FK)};
+\node[attr, below=0pt of st2] (st3) {item\_id : int8 (FK)};
+\node[attr, below=0pt of st3] (st4) {quantity : numeric};
+\node[attr, below=0pt of st4] (st5) {price : numeric};
+\node[attr, below=0pt of st5] (st6) {status : text};
+\node[attr, below=0pt of st6] (st7) {last\_updated\_at : timestamptz};
 
-% ─── user_details ───
-\node[entity, right=4cm of items] (users) {user\_details};
-\node[attr, below=0pt of users] (u1) {id (PK)};
-\node[attr, below=0pt of u1] (u2) {name};
-\node[attr, below=0pt of u2] (u3) {phone\_number};
-\node[attr, below=0pt of u3] (u4) {email};
-\node[attr, below=0pt of u4] (u5) {selected\_district};
-\node[attr, below=0pt of u5] (u6) {last\_selected\_supplyco (FK)};
-\node[attr, below=0pt of u6] (u7) {fcm\_token};
-\node[attr, below=0pt of u7] (u8) {preferred\_language};
+% items
+\node[entity] at (10, 0) (items) {items};
+\node[attr, below=0pt of items] (i1) {id : int8 (PK)};
+\node[attr, below=0pt of i1] (i2) {name : text};
+\node[attr, below=0pt of i2] (i3) {local\_name : text};
+\node[attr, below=0pt of i3] (i4) {unit : text};
+\node[attr, below=0pt of i4] (i5) {category : text};
+\node[attr, below=0pt of i5] (i6) {image\_url : text};
+\node[attr, below=0pt of i6] (i7) {is\_active : bool};
 
-% ─── sync_metadata ───
-\node[entity, below=4.5cm of users] (sync) {sync\_metadata};
-\node[attr, below=0pt of sync] (sm1) {id (PK)};
-\node[attr, below=0pt of sm1] (sm2) {last\_sync};
+% ─── Row 2: user_details (left), alert_subscriptions (center) ───
+
+% user_details
+\node[entity] at (0, -6) (users) {user\_details};
+\node[attr, below=0pt of users] (u1) {id : uuid (PK)};
+\node[attr, below=0pt of u1] (u2) {phone\_number : text};
+\node[attr, below=0pt of u2] (u3) {name : text};
+\node[attr, below=0pt of u3] (u4) {email : text};
+\node[attr, below=0pt of u4] (u5) {preferred\_language : text};
+\node[attr, below=0pt of u5] (u6) {selected\_district : text};
+\node[attr, below=0pt of u6] (u7) {last\_selected\_supplyco : text};
+\node[attr, below=0pt of u7] (u8) {fcm\_token : text};
+\node[attr, below=0pt of u8] (u9) {created\_at : timestamptz};
+
+% alert_subscriptions
+\node[entity] at (5, -6) (alerts) {alert\_subscriptions};
+\node[attr, below=0pt of alerts] (a1) {id : int8 (PK)};
+\node[attr, below=0pt of a1] (a2) {user\_id : uuid (FK)};
+\node[attr, below=0pt of a2] (a3) {store\_id : int8 (FK)};
+\node[attr, below=0pt of a3] (a4) {item\_id : int8 (FK)};
+\node[attr, below=0pt of a4] (a5) {is\_active : bool};
+\node[attr, below=0pt of a5] (a6) {created\_at : timestamptz};
+
+% ─── Row 3: sync_metadata (left), log_data (center) ───
+
+% sync_metadata
+\node[entity] at (0, -11) (sync) {sync\_metadata};
+\node[attr, below=0pt of sync] (sm1) {id : int8 (PK)};
+\node[attr, below=0pt of sm1] (sm2) {last\_sync : timestamptz};
+
+% log_data
+\node[entity] at (5, -11) (logd) {log\_data};
+\node[attr, below=0pt of logd] (l1) {id : int8 (PK)};
+\node[attr, below=0pt of l1] (l2) {sync\_time : timestamptz};
+\node[attr, below=0pt of l2] (l3) {sync\_status : bool};
 
 % ─── Relationships ───
-\draw[arrow] (stock) -- node[left, font=\scriptsize, pos=0.3] {N} node[left, font=\scriptsize, pos=0.8] {1} (s5);
-\draw[arrow] (stock) -- node[right, font=\scriptsize, pos=0.3] {N} node[right, font=\scriptsize, pos=0.8] {1} (i5);
-\draw[arrow] (u6) -| node[below, font=\scriptsize, pos=0.2] {N:1} (s5);
+% stock.store_id → stores.id (horizontal)
+\draw[arrow] (st2.west) -- node[above, font=\tiny] {N:1} (s1.east);
+% stock.item_id → items.id (horizontal)
+\draw[arrow] (st3.east) -- node[above, font=\tiny] {N:1} (i1.west);
+% alert_subscriptions.user_id → user_details.id (horizontal)
+\draw[arrow] (a2.west) -- node[above, font=\tiny] {N:1} (u1.east);
+% alert_subscriptions.store_id → stores (route far left, clearing stores table)
+\draw[arrow] (a3.west) -- ++(-5.6,0) |- node[left, font=\tiny, pos=0.85] {N:1} (s7.west);
+% alert_subscriptions.item_id → items (route far right, clearing items table)
+\draw[arrow] (a4.east) -- ++(5.6,0) |- node[right, font=\tiny, pos=0.85] {N:1} (i7.east);
 
 \end{tikzpicture}
 \caption{Entity-Relationship Diagram}
@@ -148,11 +181,13 @@ Figure~\ref{fig:er_diagram} presents the Entity-Relationship diagram showing the
 The database schema consists of the following tables:
 
 \begin{itemize}
-    \item \textbf{stores:} Contains information about each SupplyCo outlet including name, district, address, and the government-assigned store identifier.
-    \item \textbf{items:} Master table of all commodities available across the SupplyCo network, with name, unit of measurement, image URL, and category.
+    \item \textbf{stores:} Contains information about each SupplyCo outlet including name, district, address, geographical location, and the government-assigned store identifier.
+    \item \textbf{items:} Master table of all commodities available across the SupplyCo network, with name, local name, unit of measurement, image URL, and category.
     \item \textbf{stock:} Junction table that maps stores to items with current quantity, price, and availability status. Uses a composite unique constraint on (store\_id, item\_id) for upsert operations during synchronization.
     \item \textbf{user\_details:} Stores registered user information including authentication details, preferred district, last visited store, FCM token for push notifications, and language preference.
+    \item \textbf{alert\_subscriptions:} Tracks user subscriptions for restock alerts on specific items at specific stores, enabling targeted push notifications.
     \item \textbf{sync\_metadata:} Maintains the last synchronization timestamp used for incremental data fetching from the government simulator.
+    \item \textbf{log\_data:} Records synchronization events with timestamp and status for monitoring and debugging purposes.
 \end{itemize}
 
 \subsubsection{Use Case Diagram}
@@ -162,16 +197,29 @@ Figure~\ref{fig:usecase} shows the use case diagram depicting the interactions b
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    actor/.style={font=\small},
     usecase/.style={draw, ellipse, minimum width=3cm, minimum height=1cm, align=center, font=\small, fill=yellow!10},
     arrow/.style={-{Stealth[length=2.5mm]}},
     node distance=1cm
 ]
 
+% ─── Stick Figure Macro ───
+% Draws a stick figure at position with label below
+\newcommand{\stickfigure}[3]{% #1=name, #2=position, #3=label
+    \begin{scope}[shift={#2}]
+        \draw (0,0.6) circle (0.15);              % head
+        \draw (0,0.45) -- (0,0.1);                % body
+        \draw (-0.2,0.35) -- (0,0.25) -- (0.2,0.35); % arms
+        \draw (0,0.1) -- (-0.15,-0.1);             % left leg
+        \draw (0,0.1) -- (0.15,-0.1);              % right leg
+        \node[below, font=\scriptsize] at (0,-0.15) {#3};
+    \end{scope}
+    \coordinate (#1) at ([shift={#2}]0,0.3);
+}
+
 % ─── Actors ───
-\node[actor] (guest) at (-5, 3) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize Guest User};
-\node[actor] (reg) at (-5, -1) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize Registered User};
-\node[actor] (sys) at (6.5, 1) {\includegraphics[width=0.6cm]{example-image}\\\scriptsize System};
+\stickfigure{guest}{(-5, 3)}{Guest User}
+\stickfigure{reg}{(-5, -1)}{Registered User}
+\stickfigure{sys}{(6.5, 1)}{System}
 
 % ─── Use Cases ───
 \node[usecase] (search) at (0.5, 5) {Search Stores};
@@ -191,6 +239,7 @@ Figure~\ref{fig:usecase} shows the use case diagram depicting the interactions b
 \draw[arrow] (guest) -- (filter);
 \draw[arrow] (guest) -- (nearby);
 \draw[arrow] (guest) -- (viewstock);
+\draw[arrow] (guest) -- (lang);
 
 \draw[arrow] (reg) -- (search);
 \draw[arrow] (reg) -- (filter);
@@ -216,42 +265,42 @@ Figure~\ref{fig:dataflow} illustrates the data flow through the system, showing 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    process/.style={draw, circle, minimum size=1.8cm, align=center, font=\scriptsize, fill=blue!10},
-    store/.style={draw, rectangle, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\scriptsize, fill=green!10},
-    ext/.style={draw, rectangle, minimum width=2.2cm, minimum height=0.7cm, align=center, font=\scriptsize, fill=red!10},
+    process/.style={draw, circle, minimum size=1.5cm, align=center, font=\scriptsize, fill=blue!10},
+    store/.style={draw, rectangle, minimum width=2cm, minimum height=0.6cm, align=center, font=\scriptsize, fill=green!10},
+    ext/.style={draw, rectangle, minimum width=2cm, minimum height=0.6cm, align=center, font=\scriptsize, fill=red!10},
     flow/.style={-{Stealth[length=2.5mm]}, thick},
-    node distance=2cm
+    lbl/.style={font=\scriptsize, fill=white, inner sep=1pt}
 ]
 
 % External entities
-\node[ext] (govt) at (0, 4) {Govt Database\\(Django)};
-\node[ext] (user) at (0, -4) {Mobile User};
-\node[ext] (fcm_ext) at (7, 0) {Firebase\\FCM};
+\node[ext] (govt) at (0, 3.5) {Govt Database\\(Django)};
+\node[ext] (user) at (0, -3.5) {Mobile User};
+\node[ext] (fcm_ext) at (5.5, 0) {Firebase\\FCM};
 
 % Processes
-\node[process] (p1) at (0, 2) {1.0\\Sync\\Stock};
+\node[process] (p1) at (0, 1.8) {1.0\\Sync\\Stock};
 \node[process] (p2) at (0, 0) {2.0\\Serve\\Data};
-\node[process] (p3) at (0, -2) {3.0\\Display\\Stock};
-\node[process] (p4) at (4, 2) {4.0\\Detect\\Restock};
-\node[process] (p5) at (4, 0) {5.0\\Send\\Push};
+\node[process] (p3) at (0, -1.8) {3.0\\Display\\Stock};
+\node[process] (p4) at (3, 1.8) {4.0\\Detect\\Restock};
+\node[process] (p5) at (3, 0) {5.0\\Send\\Push};
 
 % Data stores
-\node[store] (ds1) at (-4, 1) {D1: Stock\\Table};
-\node[store] (ds2) at (-4, -1) {D2: User\\Details};
-\node[store] (ds3) at (4, -2.5) {D3: Local\\Cache};
+\node[store] (ds1) at (-3, 0.9) {D1: Stock Table};
+\node[store] (ds2) at (-3, -0.9) {D2: User Details};
+\node[store] (ds3) at (3, -2.5) {D3: Local Cache};
 
 % Flows
-\draw[flow] (govt) -- node[right, font=\scriptsize] {API Data} (p1);
-\draw[flow] (p1) -- node[left, font=\scriptsize] {Stock} (ds1);
-\draw[flow] (ds1) -- node[above, font=\scriptsize] {Stock Data} (p2);
-\draw[flow] (p2) -- node[left, font=\scriptsize] {JSON} (p3);
-\draw[flow] (p3) -- node[left, font=\scriptsize] {UI} (user);
-\draw[flow] (p1) -| node[above, font=\scriptsize, pos=0.3] {Change} (p4);
-\draw[flow] (p4) -- (p5);
-\draw[flow] (ds2) -- node[above, font=\scriptsize] {FCM Tokens} (p5);
-\draw[flow] (p5) -- node[above, font=\scriptsize] {Notification} (fcm_ext);
-\draw[flow] (fcm_ext) |- node[right, font=\scriptsize, pos=0.7] {Push} (user);
-\draw[flow] (p3) -| node[below, font=\scriptsize, pos=0.3] {Cache} (ds3);
+\draw[flow] (govt) -- node[lbl, right] {API Data} (p1);
+\draw[flow] (p1) -- node[lbl, above] {Stock} (ds1);
+\draw[flow] (ds1) -- node[lbl, above] {Stock Data} (p2);
+\draw[flow] (p2) -- node[lbl, right] {JSON} (p3);
+\draw[flow] (p3) -- node[lbl, right] {UI} (user);
+\draw[flow] (p1) -- node[lbl, above] {Change} (p4);
+\draw[flow] (p4) -- node[lbl, right] {Restock} (p5);
+\draw[flow] (ds2) -- node[lbl, below] {FCM Tokens} (p5);
+\draw[flow] (p5) -- node[lbl, above] {Notification} (fcm_ext);
+\draw[flow] (fcm_ext) |- node[lbl, right, pos=0.7] {Push} (user);
+\draw[flow] (p3) -- node[lbl, above] {Cache} (ds3);
 
 \end{tikzpicture}
 \caption{Data Flow Diagram}
