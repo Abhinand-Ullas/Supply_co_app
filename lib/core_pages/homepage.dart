@@ -12,6 +12,9 @@ import 'package:supply_co/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ✅ Extracted ResultsPage lives here
+import 'package:supply_co/core_pages/results_page.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -21,7 +24,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   static const _green = Color(0xFF1B4D3E);
   static const _orange = Color(0xFFE87830);
-  // ✅ Softer off-white — less yellow, easier on the eyes
   static const _lightBg = Color(0xFFF5F5F0);
 
   final _supabaseService = SupabaseService();
@@ -35,18 +37,13 @@ class _HomePageState extends State<HomePage> {
   bool _loadingStores = true;
   List<Map<String, dynamic>> _suggestions = [];
 
-  // _searchResults → full-page _ResultsPage (Search button or "View all")
   List<Map<String, dynamic>>? _searchResults;
-
-  // _nearbyStores → inline results shown on home page
   List<Map<String, dynamic>>? _nearbyStores;
-
   List<Map<String, dynamic>> _previewStores = [];
 
   String? _username;
   Map<String, dynamic>? _lastSnapshot;
 
-  // true = button tap (shows spinner), false background = no spinner
   bool _isFetchingLocation = false;
   bool _isSilentRefresh = false;
 
@@ -68,7 +65,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // ── Data ─────────────────────────────────────────────────
+  // ── Data ──────────────────────────────────────────────────────────────────
 
   Future<void> _loadStoresAndDistricts() async {
     final cachedStores = StorageService.getAllStores();
@@ -148,7 +145,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ── Search ────────────────────────────────────────────────
+  // ── Search ────────────────────────────────────────────────────────────────
 
   List<Map<String, dynamic>> _filterStores({
     required String query,
@@ -170,9 +167,8 @@ class _HomePageState extends State<HomePage> {
     }).toList();
   }
 
-  // ── Location ──────────────────────────────────────────────
+  // ── Location ──────────────────────────────────────────────────────────────
 
-  /// Button tap — shows spinner + error snackbar on failure
   Future<void> _fetchNearbyStores() async {
     setState(() => _isFetchingLocation = true);
     try {
@@ -197,14 +193,13 @@ class _HomePageState extends State<HomePage> {
       }
       final position = await LocationService.getUserLocation();
       if (position == null) throw Exception("Could not determine location.");
-
       final nearbyStores = await _supabaseService.fetchNearbyStores(
         position.latitude,
         position.longitude,
       );
       if (mounted) {
         setState(() {
-          _nearbyStores = nearbyStores; // inline on home page
+          _nearbyStores = nearbyStores;
           _selectedDistrict = null;
         });
       }
@@ -228,7 +223,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// initState auto-fetch — silent, no spinner, no error shown
   Future<void> _fetchNearbyStoresIfPermitted() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
@@ -247,7 +241,6 @@ class _HomePageState extends State<HomePage> {
       );
       if (mounted) setState(() => _nearbyStores = nearbyStores);
     } catch (_) {
-      // silent fail
     } finally {
       if (mounted) setState(() => _isSilentRefresh = false);
     }
@@ -293,7 +286,7 @@ class _HomePageState extends State<HomePage> {
     _supabaseService.updateUserDetails(district: district);
   }
 
-  // ── Navigation ────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────────────
 
   void _navigateToStock(Map<String, dynamic> store) {
     final id = store['id'];
@@ -328,7 +321,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -347,8 +340,9 @@ class _HomePageState extends State<HomePage> {
         child: Scaffold(
           backgroundColor: _lightBg,
           appBar: _buildAppBar(),
+          // ✅ ResultsPage is now imported from results_page.dart
           body: _searchResults != null
-              ? _ResultsPage(
+              ? ResultsPage(
                   results: _searchResults!,
                   district: _selectedDistrict,
                   onBack: () => setState(() => _searchResults = null),
@@ -383,13 +377,9 @@ class _HomePageState extends State<HomePage> {
                     builder: (_) => const ProfileSettingsPage(),
                   ),
                 ),
-                child: CircleAvatar(
+                child: const CircleAvatar(
                   backgroundColor: Colors.white24,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.person, color: Colors.white, size: 20),
                 ),
               ),
             ),
@@ -422,7 +412,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Search Page — original layout ─────────────────────────
+  // ── Search Page ───────────────────────────────────────────────────────────
 
   Widget _buildSearchPage() {
     final loc = AppLocalizations.of(context)!;
@@ -438,7 +428,6 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
 
-            // Last Visited
             if (_lastSnapshot != null) ...[
               _LastVisitedCard(
                 snapshot: _lastSnapshot!,
@@ -453,7 +442,6 @@ class _HomePageState extends State<HomePage> {
             _buildSearchField(),
             const SizedBox(height: 16),
 
-            // Search button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -470,16 +458,13 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   loc.searchButton,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
 
             const SizedBox(height: 12),
 
-            // Location button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -502,9 +487,7 @@ class _HomePageState extends State<HomePage> {
                 label: Text(
                   _isFetchingLocation ? 'Locating...' : 'Find Nearest Outlets',
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -525,7 +508,6 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 24),
 
-            // Inline nearby / preview / illustration
             if (_isFetchingLocation)
               _buildLoadingShimmer()
             else if (_nearbyStores != null && _nearbyStores!.isNotEmpty)
@@ -542,9 +524,7 @@ class _HomePageState extends State<HomePage> {
                       loc.pleaseEnterOutlet,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
+                          fontSize: 13, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -557,7 +537,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Inline Nearby Results ─────────────────────────────────
+  // ── Nearby Section ────────────────────────────────────────────────────────
 
   Widget _buildNearbySection(AppLocalizations loc) {
     final topStores = _nearbyStores!.take(3).toList();
@@ -583,7 +563,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            // Tiny dot — silent refresh indicator, no spinner
             if (_isSilentRefresh)
               Row(
                 children: [
@@ -598,7 +577,8 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(width: 4),
                   Text(
                     'Updating',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -611,7 +591,6 @@ class _HomePageState extends State<HomePage> {
         if (hasMore) ...[
           const SizedBox(height: 4),
           GestureDetector(
-            // Only goes full-page when user explicitly taps this
             onTap: () => setState(() => _searchResults = _nearbyStores),
             child: Container(
               width: double.infinity,
@@ -619,7 +598,8 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _green.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: _green.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -682,9 +662,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                      fontSize: 14, fontWeight: FontWeight.w700),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -692,19 +670,14 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   children: [
                     if (place.isNotEmpty) ...[
-                      Icon(
-                        Icons.location_on,
-                        size: 11,
-                        color: Colors.grey.shade500,
-                      ),
+                      Icon(Icons.location_on,
+                          size: 11, color: Colors.grey.shade500),
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           place,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
+                              fontSize: 12, color: Colors.grey.shade500),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -715,9 +688,7 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         '· $distance km',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade400,
-                        ),
+                            fontSize: 12, color: Colors.grey.shade400),
                       ),
                     ],
                   ],
@@ -729,7 +700,8 @@ class _HomePageState extends State<HomePage> {
           GestureDetector(
             onTap: () => _navigateToStock(store),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: _green,
                 borderRadius: BorderRadius.circular(20),
@@ -737,10 +709,9 @@ class _HomePageState extends State<HomePage> {
               child: const Text(
                 'Stock',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -749,7 +720,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Shimmer placeholders ──────────────────────────────────
+  // ── Shimmer ───────────────────────────────────────────────────────────────
 
   Widget _buildLoadingShimmer() {
     return Column(
@@ -762,10 +733,9 @@ class _HomePageState extends State<HomePage> {
             const Text(
               'Finding nearby outlets...',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87),
             ),
           ],
         ),
@@ -825,7 +795,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── District Dropdown ─────────────────────────────────────
+  // ── District Dropdown ─────────────────────────────────────────────────────
 
   Widget _buildDistrictDropdown() {
     final loc = AppLocalizations.of(context)!;
@@ -835,7 +805,8 @@ class _HomePageState extends State<HomePage> {
           onTap: () =>
               setState(() => _districtDropdownOpen = !_districtDropdownOpen),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -877,10 +848,9 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: const [
                 BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
-                ),
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3)),
               ],
             ),
             child: _loadingStores
@@ -896,20 +866,15 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 14,
-                              ),
+                                  horizontal: 14, vertical: 14),
                               decoration: BoxDecoration(
                                 border: Border(
                                   bottom: BorderSide(
-                                    color: Colors.grey.shade200,
-                                  ),
+                                      color: Colors.grey.shade200),
                                 ),
                               ),
-                              child: Text(
-                                d,
-                                style: const TextStyle(fontSize: 15),
-                              ),
+                              child: Text(d,
+                                  style: const TextStyle(fontSize: 15)),
                             ),
                           ),
                         )
@@ -920,7 +885,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Preview section ───────────────────────────────────────
+  // ── Preview Section ───────────────────────────────────────────────────────
 
   Widget _buildPreviewSection() {
     final loc = AppLocalizations.of(context)!;
@@ -935,10 +900,9 @@ class _HomePageState extends State<HomePage> {
         Text(
           loc.selectedOutlet,
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Colors.black54,
-          ),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.black54),
         ),
         const SizedBox(height: 10),
         Container(
@@ -975,17 +939,13 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           name,
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         if (place.isNotEmpty)
                           Text(
                             place,
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.black54,
-                            ),
+                                fontSize: 13, color: Colors.black54),
                           ),
                       ],
                     ),
@@ -1000,9 +960,8 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     distance != null
-                        ? AppLocalizations.of(
-                            context,
-                          )!.kmAway(distance.toString())
+                        ? AppLocalizations.of(context)!
+                            .kmAway(distance.toString())
                         : AppLocalizations.of(context)!.locationInfo,
                     style: const TextStyle(color: Colors.grey),
                   ),
@@ -1014,9 +973,7 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           loc.viewMore,
                           style: TextStyle(
-                            color: _green,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: _green, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(width: 4),
                         Icon(Icons.arrow_forward, size: 16, color: _green),
@@ -1032,7 +989,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Search field ──────────────────────────────────────────
+  // ── Search Field ──────────────────────────────────────────────────────────
 
   Widget _buildSearchField() {
     final loc = AppLocalizations.of(context)!;
@@ -1051,12 +1008,10 @@ class _HomePageState extends State<HomePage> {
             onSubmitted: (_) => _performSearch(),
             decoration: InputDecoration(
               hintText: loc.searchByNamePlaceCode,
-              hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
-              prefixIcon: const Icon(
-                Icons.search,
-                color: Colors.black45,
-                size: 20,
-              ),
+              hintStyle:
+                  const TextStyle(color: Colors.black38, fontSize: 14),
+              prefixIcon: const Icon(Icons.search,
+                  color: Colors.black45, size: 20),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -1073,10 +1028,9 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.grey.shade300),
               boxShadow: const [
                 BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
-                ),
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3)),
               ],
             ),
             child: Column(
@@ -1087,20 +1041,17 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 13,
-                        ),
+                            horizontal: 14, vertical: 13),
                         decoration: BoxDecoration(
                           border: Border(
-                            bottom: BorderSide(color: Colors.grey.shade200),
+                            bottom:
+                                BorderSide(color: Colors.grey.shade200),
                           ),
                         ),
                         child: Text(
                           _storeSuggestionLabel(s),
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                              fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -1196,9 +1147,7 @@ class _LastVisitedCard extends StatelessWidget {
                       Text(
                         name,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
+                            fontSize: 14, fontWeight: FontWeight.w700),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1206,33 +1155,23 @@ class _LastVisitedCard extends StatelessWidget {
                       Row(
                         children: [
                           if (district.isNotEmpty) ...[
-                            Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: Colors.grey.shade500,
-                            ),
+                            Icon(Icons.location_on,
+                                size: 12, color: Colors.grey.shade500),
                             const SizedBox(width: 2),
                             Text(
                               district,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
-                              ),
+                                  fontSize: 12, color: Colors.grey.shade500),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          Icon(
-                            Icons.access_time,
-                            size: 12,
-                            color: Colors.grey.shade400,
-                          ),
+                          Icon(Icons.access_time,
+                              size: 12, color: Colors.grey.shade400),
                           const SizedBox(width: 2),
                           Text(
                             timeAgo,
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade400,
-                            ),
+                                fontSize: 12, color: Colors.grey.shade400),
                           ),
                         ],
                       ),
@@ -1247,10 +1186,9 @@ class _LastVisitedCard extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!.viewStock,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: green,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          fontSize: 11,
+                          color: green,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -1259,253 +1197,6 @@ class _LastVisitedCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  Results Page
-// ─────────────────────────────────────────────
-class _ResultsPage extends StatefulWidget {
-  final List<Map<String, dynamic>> results;
-  final String? district;
-  final VoidCallback onBack;
-  final void Function(Map<String, dynamic>) onViewStock;
-  final Color green;
-
-  const _ResultsPage({
-    required this.results,
-    required this.district,
-    required this.onBack,
-    required this.onViewStock,
-    required this.green,
-  });
-
-  @override
-  State<_ResultsPage> createState() => _ResultsPageState();
-}
-
-class _ResultsPageState extends State<_ResultsPage> {
-  static const _pageSize = 7;
-  int _displayCount = _pageSize;
-  bool _sortByDistance = true;
-
-  List<Map<String, dynamic>> get _displayed =>
-      widget.results.take(_displayCount).toList();
-  bool get _hasMore => _displayCount < widget.results.length;
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.allSupplycoOutlets,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.location_on, color: widget.green, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      widget.district != null
-                          ? loc.district(widget.district!)
-                          : loc.allDistrictsLabel,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 1,
-                      height: 16,
-                      color: Colors.grey.shade300,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      loc.outletFound(widget.results.length),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 6, bottom: 4),
-                child: Text(
-                  loc.sortedByDistance,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    setState(() => _sortByDistance = !_sortByDistance),
-                icon: const Icon(Icons.swap_vert, size: 16),
-                label: Text(loc.sort),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black87,
-                  side: BorderSide(color: Colors.grey.shade400),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  textStyle: const TextStyle(fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _displayed.length + 1,
-            itemBuilder: (context, index) {
-              if (index == _displayed.length) return _buildFooter();
-              return _buildStoreCard(_displayed[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStoreCard(Map<String, dynamic> store) {
-    final loc = AppLocalizations.of(context)!;
-    final name = store['name'] ?? 'Unknown Store';
-    final place = store['address'] ?? store['district'] ?? '';
-    final distance = store['distance_km'];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  place.toString().isNotEmpty ? '$name - $place' : name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Text('📍', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 4),
-                    Text(
-                      distance != null
-                          ? AppLocalizations.of(
-                              context,
-                            )!.kmAway(distance.toString())
-                          : AppLocalizations.of(context)!.kmAway('2.0'),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () => widget.onViewStock(store),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.black87,
-              side: BorderSide(color: Colors.grey.shade400),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              textStyle: const TextStyle(fontSize: 13),
-            ),
-            child: Text('${loc.viewStock} >'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    final loc = AppLocalizations.of(context)!;
-    if (widget.results.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            loc.noOutletsFound,
-            style: const TextStyle(color: Colors.black54),
-          ),
-        ),
-      );
-    }
-    if (_hasMore) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: GestureDetector(
-          onTap: () => setState(() => _displayCount += _pageSize),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context)!.viewMoreOutlets,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: Text(
-          loc.loadingMoreOutlets,
-          style: const TextStyle(fontSize: 13, color: Colors.black38),
-        ),
-      ),
     );
   }
 }
@@ -1546,9 +1237,7 @@ class _SearchIllustration extends StatelessWidget {
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                      horizontal: 10, vertical: 4),
                   height: 8,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
@@ -1557,9 +1246,7 @@ class _SearchIllustration extends StatelessWidget {
                 ),
                 Container(
                   margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                      horizontal: 10, vertical: 4),
                   height: 8,
                   width: 50,
                   decoration: BoxDecoration(
@@ -1583,10 +1270,9 @@ class _SearchIllustration extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2)),
                 ],
               ),
               child: Icon(Icons.search, color: green, size: 26),
@@ -1602,7 +1288,8 @@ class _SearchIllustration extends StatelessWidget {
                 color: green.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.chat_bubble_outline, color: green, size: 18),
+              child:
+                  Icon(Icons.chat_bubble_outline, color: green, size: 18),
             ),
           ),
         ],
