@@ -7,7 +7,7 @@ The MySupplyCo system was developed, tested, and evaluated to assess its effecti
 The MySupplyCo application underwent comprehensive testing across multiple dimensions to ensure reliability, usability, and correctness.
 
 \begin{itemize}
-    \item \textbf{Unit Testing:} Individual service methods were tested in isolation. The \texttt{SupabaseService} data transformation methods correctly flattened the joined stock-items response into the expected format across all test cases. The \texttt{StorageService} methods for cache serialization, language code mapping, and time-ago calculation produced correct results for all edge cases (including empty cache, expired cache, and boundary time values).
+    \item \textbf{Unit Testing:} Individual service methods were tested in isolation. The \newline \texttt{SupabaseService} data transformation methods correctly flattened the joined stock-items response into the expected format across all test cases. The \newline \texttt{StorageService} methods for cache serialization, language code mapping, and time-ago calculation produced correct results for all edge cases (including empty cache, expired cache, and boundary time values).
 
     \item \textbf{Integration Testing:} End-to-end data flow from the Django simulator through the \texttt{sync-stock} edge function to the Supabase database was verified. Stock records were correctly upserted with the composite key constraint, and the checkpoint mechanism ensured that only modified records were transferred during incremental syncs. The \texttt{send-push} edge function correctly identified restock events (quantity transitioning from 0 to a positive value) and delivered FCM notifications to the appropriate users.
 

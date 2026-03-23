@@ -27,7 +27,7 @@ This section details the implementation of each major functionality of the MySup
 
     \item \textbf{Login Flow:} User enters their registered mobile number on the Login tab. OTP is sent and verified. The system checks if a profile exists in \texttt{user\_details}. If found, the user is redirected to the Home Page. If not found, the user is prompted to register first.
 
-    \item \textbf{Google OAuth Flow:} User taps ``Continue with Google''. The system initiates OAuth via \texttt{signInWithOAuth} with a deep link callback (\texttt{supplyco://login-callback/}). On the Register tab, a new profile is created with the entered name and Google email. On the Login tab, existing profiles are verified before granting access.
+    \item \textbf{Google OAuth Flow:} User taps ``Continue with Google''. The system initiates OAuth via \texttt{signInWithOAuth} with a deep link callback \newline (\texttt{supplyco://login-callback/}). On the Register tab, a new profile is created with the entered name and Google email. On the Login tab, existing profiles are verified before granting access.
 
     \item \textbf{Guest Mode:} User taps ``Continue as Guest'' on the onboarding screen. The system sets a local flag via \texttt{StorageService.setGuestMode(true)} and grants read-only access to stock viewing features without authentication.
 \end{enumerate}
@@ -68,7 +68,7 @@ This section details the implementation of each major functionality of the MySup
 
     \item \textbf{District Filter:} User selects a district from the dropdown menu populated with all Kerala districts. The store list is filtered to show only outlets in the selected district.
 
-    \item \textbf{Nearby Stores:} The system requests GPS permissions via \texttt{LocationService}. On permission grant, the current position is obtained via \texttt{Geolocator.getCurrentPosition()} with high accuracy. The coordinates are sent to the \texttt{get\_nearby\_stores} RPC function, which returns stores ordered by distance.
+    \item \textbf{Nearby Stores:} The system requests GPS permissions via \texttt{LocationService}. On permission grant, the current position is obtained via \newline \texttt{Geolocator.getCurrentPosition()} with high accuracy. The coordinates are sent to the \texttt{get\_nearby\_stores} RPC function, which returns stores ordered by distance.
 \end{enumerate}
 
 \textbf{Test Cases:}
@@ -105,7 +105,7 @@ This section details the implementation of each major functionality of the MySup
     \item If cached stock exists for the selected store, it is displayed immediately while a fresh fetch occurs in the background.
     \item The system calls \texttt{SupabaseService.fetchStock(storeId)}, which queries the \texttt{stock} table with a join to the \texttt{items} table.
     \item Fetched data is displayed in a 2-column grid of stock cards, each showing the item image, name, quantity with unit, price in INR, and an availability badge (green for available, red for unavailable).
-    \item Successfully fetched data is saved to local cache via \texttt{StorageService.saveStoreSnapshot()}.
+    \item Successfully fetched data is saved to local cache via \newline \texttt{StorageService.saveStoreSnapshot()}.
     \item If the network request fails, cached data is shown with an ``Offline'' banner indicating the data age.
 \end{enumerate}
 
@@ -208,9 +208,9 @@ This section details the implementation of each major functionality of the MySup
 \textbf{Process:}
 \begin{enumerate}
     \item On first launch, the onboarding screen presents language options: English (default) and ``Others'' (expanding to show Malayalam, Hindi, Gujarati, Marathi, Bengali, Tamil, Telugu).
-    \item Language selection updates \texttt{LocalizationProvider}, which calls \texttt{notifyListeners()} to trigger a reactive UI rebuild.
-    \item The selected language code is persisted locally via \texttt{StorageService.setPreferredLanguage(code)}.
-    \item For authenticated users, the language preference is synced to the \texttt{user\_details.preferred\_language} column in Supabase.
+    \item Language selection updates \texttt{LocalizationProvider}, which calls \newline \texttt{notifyListeners()} to trigger a reactive UI rebuild.
+    \item The selected language code is persisted locally via \newline \texttt{StorageService.setPreferredLanguage(code)}.
+    \item For authenticated users, the language preference is synced to the \newline \texttt{user\_details.preferred\_language} column in Supabase.
     \item The \texttt{MaterialApp} widget consumes the locale from the provider and loads the corresponding ARB-generated localization delegates.
 \end{enumerate}
 
@@ -263,7 +263,7 @@ The following testing strategies were employed throughout the development of the
 \begin{enumerate}
     \item \textbf{Unit Testing:}
     \begin{itemize}
-        \item Writing tests for individual service methods (e.g., \texttt{SupabaseService.fetchStock()}, \texttt{StorageService.getTimeAgo()}) to verify correct data transformation and error handling in isolation.
+        \item Writing tests for individual service methods (e.g., \newline \texttt{SupabaseService.fetchStock()}, \texttt{StorageService.getTimeAgo()}) to verify correct data transformation and error handling in isolation.
         \item Testing localization helper methods for correct language code mapping.
     \end{itemize}
 

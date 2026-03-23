@@ -86,96 +86,7 @@ Figure~\ref{fig:er_diagram} presents the Entity-Relationship diagram showing the
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-    entity/.style={draw, rectangle, minimum width=2.8cm, minimum height=0.6cm, fill=blue!10, font=\scriptsize\bfseries},
-    attr/.style={draw, rectangle, minimum width=2.8cm, font=\tiny, fill=white, anchor=north},
-    arrow/.style={-{Stealth[length=2mm]}, thick},
-    node distance=0cm
-]
-
-% ─── Row 1: stores (left), stock (center), items (right) ───
-
-% stores
-\node[entity] (stores) at (0, 0) {stores};
-\node[attr, below=0pt of stores] (s1) {id : int8 (PK)};
-\node[attr, below=0pt of s1] (s2) {govt\_store\_id : text};
-\node[attr, below=0pt of s2] (s3) {name : text};
-\node[attr, below=0pt of s3] (s4) {district : text};
-\node[attr, below=0pt of s4] (s5) {address : text};
-\node[attr, below=0pt of s5] (s6) {location : geography};
-\node[attr, below=0pt of s6] (s7) {is\_active : bool};
-
-% stock (center, between stores and items)
-\node[entity] at (5, 0) (stock) {stock};
-\node[attr, below=0pt of stock] (st1) {id : int8 (PK)};
-\node[attr, below=0pt of st1] (st2) {store\_id : int8 (FK)};
-\node[attr, below=0pt of st2] (st3) {item\_id : int8 (FK)};
-\node[attr, below=0pt of st3] (st4) {quantity : numeric};
-\node[attr, below=0pt of st4] (st5) {price : numeric};
-\node[attr, below=0pt of st5] (st6) {status : text};
-\node[attr, below=0pt of st6] (st7) {last\_updated\_at : timestamptz};
-
-% items
-\node[entity] at (10, 0) (items) {items};
-\node[attr, below=0pt of items] (i1) {id : int8 (PK)};
-\node[attr, below=0pt of i1] (i2) {name : text};
-\node[attr, below=0pt of i2] (i3) {local\_name : text};
-\node[attr, below=0pt of i3] (i4) {unit : text};
-\node[attr, below=0pt of i4] (i5) {category : text};
-\node[attr, below=0pt of i5] (i6) {image\_url : text};
-\node[attr, below=0pt of i6] (i7) {is\_active : bool};
-
-% ─── Row 2: user_details (left), alert_subscriptions (center) ───
-
-% user_details
-\node[entity] at (0, -6) (users) {user\_details};
-\node[attr, below=0pt of users] (u1) {id : uuid (PK)};
-\node[attr, below=0pt of u1] (u2) {phone\_number : text};
-\node[attr, below=0pt of u2] (u3) {name : text};
-\node[attr, below=0pt of u3] (u4) {email : text};
-\node[attr, below=0pt of u4] (u5) {preferred\_language : text};
-\node[attr, below=0pt of u5] (u6) {selected\_district : text};
-\node[attr, below=0pt of u6] (u7) {last\_selected\_supplyco : text};
-\node[attr, below=0pt of u7] (u8) {fcm\_token : text};
-\node[attr, below=0pt of u8] (u9) {created\_at : timestamptz};
-
-% alert_subscriptions
-\node[entity] at (5, -6) (alerts) {alert\_subscriptions};
-\node[attr, below=0pt of alerts] (a1) {id : int8 (PK)};
-\node[attr, below=0pt of a1] (a2) {user\_id : uuid (FK)};
-\node[attr, below=0pt of a2] (a3) {store\_id : int8 (FK)};
-\node[attr, below=0pt of a3] (a4) {item\_id : int8 (FK)};
-\node[attr, below=0pt of a4] (a5) {is\_active : bool};
-\node[attr, below=0pt of a5] (a6) {created\_at : timestamptz};
-
-% ─── Row 3: sync_metadata (left), log_data (center) ───
-
-% sync_metadata
-\node[entity] at (0, -11) (sync) {sync\_metadata};
-\node[attr, below=0pt of sync] (sm1) {id : int8 (PK)};
-\node[attr, below=0pt of sm1] (sm2) {last\_sync : timestamptz};
-
-% log_data
-\node[entity] at (5, -11) (logd) {log\_data};
-\node[attr, below=0pt of logd] (l1) {id : int8 (PK)};
-\node[attr, below=0pt of l1] (l2) {sync\_time : timestamptz};
-\node[attr, below=0pt of l2] (l3) {sync\_status : bool};
-
-% ─── Relationships ───
-% stock.store_id → stores.id (horizontal)
-\draw[arrow] (st2.west) -- node[above, font=\tiny] {N:1} (s1.east);
-% stock.item_id → items.id (horizontal)
-\draw[arrow] (st3.east) -- node[above, font=\tiny] {N:1} (i1.west);
-% alert_subscriptions.user_id → user_details.id (horizontal)
-\draw[arrow] (a2.west) -- node[above, font=\tiny] {N:1} (u1.east);
-% alert_subscriptions.store_id → stores (route far left, clearing stores table)
-\draw[arrow] (a3.west) -- ++(-5.6,0) |- node[left, font=\tiny, pos=0.85] {N:1} (s7.west);
-% alert_subscriptions.item_id → items (route far right, clearing items table)
-\draw[arrow] (a4.east) -- ++(5.6,0) |- node[right, font=\tiny, pos=0.85] {N:1} (i7.east);
-
-\end{tikzpicture}
-\caption{Entity-Relationship Diagram}
-\label{fig:er_diagram}
+\includegraphics[height=1.2\textheight,width=1.2\textwidth,keepaspectratio]{images/er_daigram.png}
 \end{figure}
 
 The database schema consists of the following tables:
@@ -293,11 +204,11 @@ Figure~\ref{fig:dataflow} illustrates the data flow through the system, showing 
 \draw[flow] (govt) -- node[lbl, right] {API Data} (p1);
 \draw[flow] (p1) -- node[lbl, above] {Stock} (ds1);
 \draw[flow] (ds1) -- node[lbl, above] {Stock Data} (p2);
-\draw[flow] (p2) -- node[lbl, right] {JSON} (p3);
+\draw[flow] (p2) -- node[lbl, right,xshift=12mm] {JSON} (p3);
 \draw[flow] (p3) -- node[lbl, right] {UI} (user);
 \draw[flow] (p1) -- node[lbl, above] {Change} (p4);
 \draw[flow] (p4) -- node[lbl, right] {Restock} (p5);
-\draw[flow] (ds2) -- node[lbl, below] {FCM Tokens} (p5);
+\draw[flow] (ds2) -- node[lbl, below, xshift=12mm] {FCM Tokens} (p5);
 \draw[flow] (p5) -- node[lbl, above] {Notification} (fcm_ext);
 \draw[flow] (fcm_ext) |- node[lbl, right, pos=0.7] {Push} (user);
 \draw[flow] (p3) -- node[lbl, above] {Cache} (ds3);
@@ -374,7 +285,7 @@ The government data simulator serves as a prototype representation of the centra
 \end{itemize}
 
 \textbf{API Endpoint:}
-The simulator exposes a single REST endpoint that accepts a \texttt{last\_sync\_time} query parameter and returns all stock records modified after that timestamp. This enables incremental synchronization, where only changed records are transferred during each sync cycle.
+The simulator exposes a single REST endpoint that accepts a \newline \texttt{last\_sync\_time} query parameter and returns all stock records modified after that timestamp. This enables incremental synchronization, where only changed records are transferred during each sync cycle.
 
 \textbf{Data Model:}
 The simulator maintains its own set of stores, items, and stock records, simulating the data structure of the real SupplyCo central database. Stock quantities and prices are periodically updated to simulate real-world inventory changes.
