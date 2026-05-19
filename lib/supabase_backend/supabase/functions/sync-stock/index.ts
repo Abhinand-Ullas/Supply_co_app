@@ -12,7 +12,7 @@ Deno.serve(async (_req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-// 1. Get Checkpoint
+    // 1. Get Checkpoint
     const { data: meta } = await supabase
       .from('sync_metadata')
       .select('last_sync')
@@ -24,10 +24,7 @@ Deno.serve(async (_req: Request) => {
 
     // 🟢 FORMAT FOR DJANGO: 
     // Convert "2026-03-23T10:00:31.093Z" -> "2026-03-23 10:00:31"
-    const djangoFriendlySyncTime = rawTimestamp
-        .replace('T', ' ')
-        .split('.')[0]
-        .replace('Z', '');
+    const djangoFriendlySyncTime = new Date(rawTimestamp).toISOString().split('.')[0];
 
 
     // 2. Fetch from Django
@@ -59,6 +56,7 @@ Deno.serve(async (_req: Request) => {
           store_id: item.store,
           item_id: item.item,
           quantity: item.quantity ?? 0,
+          price: item.price ?? 0,
           last_updated_at: item.last_updated ?? new Date().toISOString(),
         }));
 
@@ -67,7 +65,7 @@ Deno.serve(async (_req: Request) => {
         const chunkSize = 100; // Smaller chunks are better for self-healing
         for (let i = 0; i < updates.length; i += chunkSize) {
           const chunk = updates.slice(i, i + chunkSize);
-          
+
           const { error } = await supabase
             .from('stock')
             .upsert(chunk, { onConflict: 'store_id,item_id' });
@@ -76,13 +74,13 @@ Deno.serve(async (_req: Request) => {
             // 🟢 SELF-HEAL TRIGGER: If a Foreign Key error (23503) occurs
             if (error.code === '23503') {
               console.warn(`⚠️ Foreign Key violation in chunk starting at index ${i}. Attempting to heal...`);
-              
+
               // Re-run this specific chunk item-by-item to save the valid ones
               for (const singleItem of chunk) {
                 const { error: singleError } = await supabase
                   .from('stock')
                   .upsert(singleItem, { onConflict: 'store_id,item_id' });
-                
+
                 if (singleError && singleError.code === '23503') {
                   console.error(`❌ Skipping Item ID: ${singleItem.item_id} (Not found in 'items' table)`);
                   continue; // Skip only this specific bad item
@@ -110,12 +108,10 @@ Deno.serve(async (_req: Request) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : JSON.stringify(error);
     console.error(`❌ Sync Error:`, msg);
-    
-    return new Response(JSON.stringify({ error: msg }), { 
-      status: 500, 
-      headers: JSON_HEADERS 
+
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: JSON_HEADERS
     });
   }
 });
-
-
